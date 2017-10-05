@@ -26,8 +26,8 @@ import com.pixielab.pixiegodriver.view.DriverMapActivity;
 public class LoginActivity extends AppCompatActivity   {
 
     //<editor-fold desc="TAGS">
-    private String TAG_DRIVERS = "Drivers";
-    private String TAG_USERS = "Users";
+    private static final String TAG_DRIVERS = "Drivers";
+    private static final String TAG_USERS = "Users";
     //</editor-fold>
 
     //<editor-fold desc="Elementos">
