@@ -82,6 +82,9 @@ public class DriverMapActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener {
 
+    //<editor-fold desc="TAGS">
+    private static final String TAG_DRIVES = "Drivers";
+    //</editor-fold>
     private Button btnGoogleMaps;
 
     //<editor-fold desc="Info Driver">
@@ -605,7 +608,7 @@ public class DriverMapActivity extends AppCompatActivity
 
             String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-            DatabaseReference ref = FirebaseDatabase.getInstance().getReference().child("Users").child("Drivers").child(driverId);
+            DatabaseReference ref = FirebaseDatabase.getInstance().getReference().child("Users").child(TAG_DRIVES).child(driverId);
             ref.addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot dataSnapshot) {
