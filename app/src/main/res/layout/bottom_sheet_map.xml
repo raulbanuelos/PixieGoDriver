@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="140dp"
+    android:orientation="vertical"
+    app:layout_behavior="@string/bottom_sheet_behavior"
+    app:behavior_hideable="true"
+    android:id="@+id/bottomSheetMapDriver"
+    app:behavior_peekHeight="150dp" android:background="@color/colorPrimary"
+
+    >
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/txtCustomerName"
+        android:textAppearance="@style/TextAppearance.AppCompat.Title"
+        android:padding="16dp"
+        android:textColor="@color/editTextColorWhite"
+        />
+    <com.shitij.goyal.slidebutton.SwipeButton
+        android:id="@+id/slide"
+
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="#e96251"
+
+        android:textColor="#FFF"
+        android:gravity="center"
+        android:layout_margin="20dp"
+        app:gradient_color_1="#289F2B"
+        app:gradient_color_2="#79af5d"
+        app:gradient_color_3="#e96251"
+        app:threshold="0.9"
+        app:swipe_mode="mirror"
+        app:gradient_color_2_width="100dp"
+        app:after_confirmation_background="#e96251"
+
+        />
+</LinearLayout>

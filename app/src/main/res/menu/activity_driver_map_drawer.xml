@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_inicio"
+            android:icon="@drawable/ic_marker"
+            android:title="@string/mnu_inicio" />
+        <item
+            android:id="@+id/nav_record"
+            android:icon="@drawable/ic_clock"
+            android:title="@string/mnu_historial" />
+        <item
+            android:id="@+id/nav_help"
+            android:icon="@drawable/ic_menu_slideshow"
+            android:title="@string/mnu_ayuda" />
+    </group>
+
+    <item android:title="@string/mnu_configuracion">
+        <menu>
+            <item
+                android:id="@+id/nav_loguot"
+                android:icon="@drawable/ic_salir"
+                android:title="@string/mnu_salir" />
+        </menu>
+    </item>
+</menu>
