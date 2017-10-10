@@ -20,7 +20,9 @@ import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
+import android.text.method.HideReturnsTransformationMethod;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -72,6 +74,7 @@ import com.shitij.goyal.slidebutton.SwipeButton;
 import com.squareup.picasso.Picasso;
 
 import org.joda.time.DateTime;
+import org.joda.time.IllegalFieldValueException;
 import org.w3c.dom.Text;
 
 import java.io.IOException;
@@ -84,8 +87,13 @@ public class DriverMapActivity extends AppCompatActivity
 
     //<editor-fold desc="TAGS">
     private static final String TAG_DRIVES = "Drivers";
+    private static final int MY_PERMISSIONS_REQUEST_LOCATION = 1 ;
     //</editor-fold>
-    private Button btnGoogleMaps;
+
+    private Context context;
+
+    private FloatingActionButton btnNavegarDestino;
+
 
     //<editor-fold desc="Info Driver">
     private TextView txtDriverName;
@@ -97,12 +105,17 @@ public class DriverMapActivity extends AppCompatActivity
     GoogleApiClient mGoogleApiClient;
     Location mLastLocation;
     Location mCurrentLocation;
+    double latitudDestination;
+    double longuitudDestination;
     LocationRequest mLocationRequest;
     private LocationManager locationManager;
 
     Polyline lDriverToCustomer; //Representa el camino del driver hacia donde se encuentra el customer.
     Marker positionBeginCustomer;
     private Boolean isDrawRoute = true;
+
+    Polyline lCustomerDestination;  //Representa el camino destino que eligió el cliente.
+    Marker positionDestinationCustomer; //Represtna el marker del destino del cliente.
     //</editor-fold>
 
     //<editor-fold desc="ButtonSheet">
@@ -121,6 +134,8 @@ public class DriverMapActivity extends AppCompatActivity
         setContentView(R.layout.activity_driver_map);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        context = getApplicationContext();
+
 
         swipeButton = (SwipeButton)findViewById(R.id.slide);
         swipeButton.addOnSwipeCallback(new SwipeButton.Swipe(){
@@ -145,11 +160,15 @@ public class DriverMapActivity extends AppCompatActivity
 
                     swipeButton.setText( "Desliza para terminar viaje ->" );
 
+                    getDestinationCustomer();
+
                     if (isDrawRoute)
                         lDriverToCustomer.remove();
 
                     if (positionBeginCustomer != null)
                         positionBeginCustomer.remove();
+
+                    btnNavegarDestino.setVisibility(View.VISIBLE);
 
                 }else if(isStarted){
                     customerId = "";
@@ -163,6 +182,7 @@ public class DriverMapActivity extends AppCompatActivity
                     getAssignedCustomer();
                     bsb.setState(BottomSheetBehavior.STATE_HIDDEN);
                     txtNameCustomer.setText("");
+                    btnNavegarDestino.setVisibility(View.INVISIBLE);
 
                 }
             }
@@ -189,19 +209,20 @@ public class DriverMapActivity extends AppCompatActivity
         photoDriver = (ImageView)header.findViewById(R.id.photoDriver);
         loadInfoDriver();
 
+
         setLocationManager((LocationManager)getSystemService(Context.LOCATION_SERVICE));
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        btnGoogleMaps = (Button)findViewById(R.id.btnGoogleMaps);
-        btnGoogleMaps.setOnClickListener(new View.OnClickListener(){
+        btnNavegarDestino = (FloatingActionButton) findViewById(R.id.btnNavegarDestino);
+        btnNavegarDestino.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                double sourceLatitude = 21.889339;
-                double sourceLongitude = -102.240475;
-                double destinationLatitude = 21.864891;
-                double destinationLongitude =  -102.242960;
+                double sourceLatitude = mLastLocation.getLatitude();
+                double sourceLongitude = mLastLocation.getLongitude();
+                double destinationLatitude = latitudDestination;
+                double destinationLongitude =  longuitudDestination;
                 String uri = "http://maps.google.com/maps?saddr=" + sourceLatitude + "," + sourceLongitude + "&daddr=" + destinationLatitude + "," + destinationLongitude;
                 Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(uri));
                 intent.setPackage("com.google.android.apps.maps");
@@ -220,11 +241,50 @@ public class DriverMapActivity extends AppCompatActivity
                         Toast.makeText(DriverMapActivity.this, "Please install a maps application", Toast.LENGTH_LONG).show();
                     }
                 }
-
             }
         });
-
         getAssignedCustomer();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (!checkPermission()){
+            requestPermission();
+        }
+    }
+
+    private Boolean checkPermission(){
+        int result = ContextCompat.checkSelfPermission(context,Manifest.permission.ACCESS_FINE_LOCATION);
+        if (result == PackageManager.PERMISSION_GRANTED){
+            return  true;
+        }else{
+        return false;
+        }
+    }
+
+    private void requestPermission(){
+        if (ActivityCompat.shouldShowRequestPermissionRationale(this,Manifest.permission.ACCESS_FINE_LOCATION)){
+            Toast.makeText(context,"GPS permission allows us to access location data. Please allow in App Settings for additional functionality.",Toast.LENGTH_LONG).show();
+        }else{
+            ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.ACCESS_FINE_LOCATION},MY_PERMISSIONS_REQUEST_LOCATION);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        //super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    getAssignedCustomer();
+                } else {
+                    //Mostrar al usuario que no se puedes continuar sin los permisos de Location
+                }
+                return;
+            }
+        }
 
     }
 
@@ -312,41 +372,42 @@ public class DriverMapActivity extends AppCompatActivity
     //<editor-fold desc="Status of map">
     @Override
     public void onLocationChanged(Location location) {
-        if (mLastLocation == null)
-            mLastLocation = location;
 
-        if (getApplicationContext() != null){
-            mCurrentLocation = location;
-
-            float distance = mCurrentLocation.distanceTo(mLastLocation);
-
-            if (distance > 100){
-                LatLng latLng = new LatLng(location.getLatitude(),location.getLongitude());
-                mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-                mMap.animateCamera(CameraUpdateFactory.zoomTo(17));
+            if (mLastLocation == null)
                 mLastLocation = location;
-            }
 
-            String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-            if (userId != null){
-                DatabaseReference refAvailable = FirebaseDatabase.getInstance().getReference("DriversAvailable");
-                DatabaseReference refWorking = FirebaseDatabase.getInstance().getReference("DriversWorking");
-                GeoFire geoFireAvailable = new GeoFire(refAvailable);
-                GeoFire geoFireWorking = new GeoFire(refWorking);
+            if (getApplicationContext() != null){
+                mCurrentLocation = location;
 
-                if (isAssigned == "Yes"){
-                    geoFireAvailable.removeLocation(userId);
-                    geoFireWorking.removeLocation(userId);
+                float distance = mCurrentLocation.distanceTo(mLastLocation);
 
-                }else if (customerId != ""){
-                    geoFireAvailable.removeLocation(userId);
-                    geoFireWorking.setLocation(userId, new GeoLocation(location.getLatitude(), location.getLongitude()));
-                }else{
-                    geoFireWorking.removeLocation(userId);
-                    geoFireAvailable.setLocation(userId, new GeoLocation(location.getLatitude(), location.getLongitude()));
+                if (distance > 100){
+                    LatLng latLng = new LatLng(location.getLatitude(),location.getLongitude());
+                    mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+                    mMap.animateCamera(CameraUpdateFactory.zoomTo(17));
+                    mLastLocation = location;
+                }
+
+                String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+                if (userId != null){
+                    DatabaseReference refAvailable = FirebaseDatabase.getInstance().getReference("DriversAvailable");
+                    DatabaseReference refWorking = FirebaseDatabase.getInstance().getReference("DriversWorking");
+                    GeoFire geoFireAvailable = new GeoFire(refAvailable);
+                    GeoFire geoFireWorking = new GeoFire(refWorking);
+
+                    if (isAssigned == "Yes"){
+                        geoFireAvailable.removeLocation(userId);
+                        geoFireWorking.removeLocation(userId);
+
+                    }else if (customerId != ""){
+                        geoFireAvailable.removeLocation(userId);
+                        geoFireWorking.setLocation(userId, new GeoLocation(location.getLatitude(), location.getLongitude()));
+                    }else{
+                        geoFireWorking.removeLocation(userId);
+                        geoFireAvailable.setLocation(userId, new GeoLocation(location.getLatitude(), location.getLongitude()));
+                    }
                 }
             }
-        }
     }
 
     @Override
@@ -443,6 +504,9 @@ public class DriverMapActivity extends AppCompatActivity
     private ValueEventListener mValueCustomerRequets;
     DatabaseReference assignedCustomerPickuplocationRef;
 
+    private ValueEventListener mValueCustomerRequetsDestination;
+    DatabaseReference assignedCustomerDestination;
+
     private String customerId = "";
     private String isAssigned = "";
     private Boolean isStarted;
@@ -510,6 +574,73 @@ public class DriverMapActivity extends AppCompatActivity
 
         final AlertDialog alertDialog = dialog.create();
         alertDialog.show();
+    }
+
+    private void getDestinationCustomer(){
+        assignedCustomerDestination = FirebaseDatabase.getInstance().getReference().child("customerRequest").child(customerId).child("h").child("l");
+        mValueCustomerRequetsDestination = assignedCustomerDestination.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (dataSnapshot.exists()){
+                    List<Object> map = (List<Object>)dataSnapshot.getValue();
+                    double locationLat =0;
+                    double locationLng = 0;
+                    if (map.get(0) != null){
+                        locationLat = Double.parseDouble(map.get(0).toString());
+                    }
+                    if (map.get(1) != null){
+                        locationLng = Double.parseDouble(map.get(1).toString());
+                    }
+
+                    LatLng driverLatLng = new LatLng(locationLat,locationLng);
+
+                    latitudDestination = driverLatLng.latitude;
+                    longuitudDestination = driverLatLng.longitude;
+                    positionDestinationCustomer = mMap.addMarker(new MarkerOptions().position(driverLatLng).title("destination location"));
+
+                    //Comenzamos a pintar la ruta
+                    DateTime now = new DateTime();
+
+                    com.google.maps.model.LatLng destino = new com.google.maps.model.LatLng(locationLat,locationLng);
+                    com.google.maps.model.LatLng origen = new com.google.maps.model.LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude());
+
+                    try {
+
+                        //bsb.setState( BottomSheetBehavior.STATE_COLLAPSED );
+                        //swipeButton.setText( "Desliza para termina el viaje ->" );
+
+                        DirectionsResult result = DirectionsApi.newRequest(getGeoContext())
+                                .mode(TravelMode.DRIVING).origin(origen)
+                                .destination(destino).departureTime(now)
+                                .await();
+
+                        List<LatLng> decodedPath = PolyUtil.decode(result.routes[0].overviewPolyline.getEncodedPath());
+                        lCustomerDestination = mMap.addPolyline(new PolylineOptions().addAll(decodedPath));
+                        isDrawRoute = true;
+                        assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
+
+                    } catch (ApiException e) {
+                        e.printStackTrace();
+                        isDrawRoute = false;
+                        assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        isDrawRoute = false;
+                        assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        isDrawRoute = false;
+                        assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+
     }
 
     private void getAssignedCustomerPickupLocation(){

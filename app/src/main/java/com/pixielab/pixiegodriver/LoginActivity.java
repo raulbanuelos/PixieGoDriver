@@ -52,6 +52,9 @@ public class LoginActivity extends AppCompatActivity   {
         txtPassword = (TextInputEditText)findViewById(R.id.password);
         txtUserName = (TextInputEditText)findViewById(R.id.username);
 
+        txtUserName.setText("taxi5@gmail.com");
+        txtPassword.setText("12345678");
+
         firebaseAuth = FirebaseAuth.getInstance();
 
         btnLogin.setOnClickListener(new View.OnClickListener() {

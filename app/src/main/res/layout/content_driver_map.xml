@@ -9,12 +9,19 @@ app:layout_behavior="@string/appbar_scrolling_view_behavior"
 tools:context="com.pixielab.pixiegodriver.view.DriverMapActivity"
 tools:showIn="@layout/app_bar_driver_map">
 
-    <Button
-        android:id="@+id/btnGoogleMaps"
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/btnNavegarDestino"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Abrir google"
-        />
+        android:layout_gravity="bottom|end"
+        android:layout_alignParentEnd="true"
+
+        android:src="@drawable/ic_shortcut_navigation"
+        android:visibility="invisible"
+        >
+
+    </android.support.design.widget.FloatingActionButton>
     <fragment
         android:id="@+id/map"
         android:name="com.google.android.gms.maps.SupportMapFragment"
