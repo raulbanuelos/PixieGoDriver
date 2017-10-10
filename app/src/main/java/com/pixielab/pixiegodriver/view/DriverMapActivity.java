@@ -173,7 +173,9 @@ public class DriverMapActivity extends AppCompatActivity
                 }else if(isStarted){
                     customerId = "";
                     isStarted = null;
-
+                    latitudDestination = 0;
+                    longuitudDestination = 0;
+                    
                     String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
                     DatabaseReference workingDriverRef = FirebaseDatabase.getInstance().getReference();
                     workingDriverRef.child("DriversWorking").child(driverId).removeValue();
