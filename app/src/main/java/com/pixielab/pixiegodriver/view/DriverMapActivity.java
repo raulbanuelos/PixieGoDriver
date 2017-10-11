@@ -9,6 +9,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Vibrator;
@@ -91,8 +92,8 @@ public class DriverMapActivity extends AppCompatActivity
     //</editor-fold>
 
     private Context context;
-
     private FloatingActionButton btnNavegarDestino;
+    private MediaPlayer notificationService;
 
 
     //<editor-fold desc="Info Driver">
@@ -136,6 +137,8 @@ public class DriverMapActivity extends AppCompatActivity
         setSupportActionBar(toolbar);
         context = getApplicationContext();
 
+        notificationService = MediaPlayer.create(this,R.raw.notifi);
+
 
         swipeButton = (SwipeButton)findViewById(R.id.slide);
         swipeButton.addOnSwipeCallback(new SwipeButton.Swipe(){
@@ -167,14 +170,14 @@ public class DriverMapActivity extends AppCompatActivity
 
                     if (positionBeginCustomer != null)
                         positionBeginCustomer.remove();
-
-                    btnNavegarDestino.setVisibility(View.VISIBLE);
-
                 }else if(isStarted){
                     customerId = "";
                     isStarted = null;
                     latitudDestination = 0;
                     longuitudDestination = 0;
+
+                    lCustomerDestination.remove();
+                    positionDestinationCustomer.remove();
                     
                     String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
                     DatabaseReference workingDriverRef = FirebaseDatabase.getInstance().getReference();
@@ -185,6 +188,8 @@ public class DriverMapActivity extends AppCompatActivity
                     bsb.setState(BottomSheetBehavior.STATE_HIDDEN);
                     txtNameCustomer.setText("");
                     btnNavegarDestino.setVisibility(View.INVISIBLE);
+
+
 
                 }
             }
@@ -535,6 +540,8 @@ public class DriverMapActivity extends AppCompatActivity
         assignedCustomerRef.removeEventListener( mValueEventListener );
         isAssigned = "Yes";
 
+        notificationService.start();
+
         final Vibrator vibrator;
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         vibrator.vibrate(2000);
@@ -547,6 +554,7 @@ public class DriverMapActivity extends AppCompatActivity
                 .setPositiveButton("Aceptar pasaje", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
+                        notificationService.stop();
                         vibrator.cancel();
 
                         isAssigned = "";
@@ -554,6 +562,8 @@ public class DriverMapActivity extends AppCompatActivity
                         String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
                         DatabaseReference assignedCustomerRefa = FirebaseDatabase.getInstance().getReference();
                         assignedCustomerRefa.child("Users").child("Drivers").child(driverId).child("customerRideId").child("accepted").setValue(true);
+                        assignedCustomerRefa.child("customerRequest").child(customerId).child("driverId").setValue(driverId);
+
 
                         getAssignedCustomerPickupLocation();
 
@@ -620,6 +630,10 @@ public class DriverMapActivity extends AppCompatActivity
                         lCustomerDestination = mMap.addPolyline(new PolylineOptions().addAll(decodedPath));
                         isDrawRoute = true;
                         assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
+
+                        if (latitudDestination != 0  && longuitudDestination != 0){
+                            btnNavegarDestino.setVisibility(View.VISIBLE);
+                        }
 
                     } catch (ApiException e) {
                         e.printStackTrace();
