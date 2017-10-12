@@ -188,9 +188,6 @@ public class DriverMapActivity extends AppCompatActivity
                     bsb.setState(BottomSheetBehavior.STATE_HIDDEN);
                     txtNameCustomer.setText("");
                     btnNavegarDestino.setVisibility(View.INVISIBLE);
-
-
-
                 }
             }
         });
