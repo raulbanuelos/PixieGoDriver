@@ -50,7 +50,7 @@
             android:name=".view.DriverMapActivity"
             android:label="@string/title_activity_driver_map"
             android:theme="@style/AppTheme"
-            android:configChanges="orientation|keyboardHidden" ></activity>
+            android:configChanges="orientation|keyboardHidden" android:screenOrientation="portrait" ></activity>
     </application>
 
 </manifest>

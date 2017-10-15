@@ -79,6 +79,7 @@ import org.joda.time.IllegalFieldValueException;
 import org.w3c.dom.Text;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -114,9 +115,12 @@ public class DriverMapActivity extends AppCompatActivity
     Polyline lDriverToCustomer; //Representa el camino del driver hacia donde se encuentra el customer.
     Marker positionBeginCustomer;
     private Boolean isDrawRoute = true;
+    private Boolean isDrawRouteDestination = false;
+    private DateTime dateBeginRide;
 
     Polyline lCustomerDestination;  //Representa el camino destino que eligió el cliente.
     Marker positionDestinationCustomer; //Represtna el marker del destino del cliente.
+    Location LocationBeginRide;
     //</editor-fold>
 
     //<editor-fold desc="ButtonSheet">
@@ -160,6 +164,8 @@ public class DriverMapActivity extends AppCompatActivity
                     DatabaseReference workingDriverRef = FirebaseDatabase.getInstance().getReference();
                     isStarted = true;
                     workingDriverRef.child("DriversWorking").child(driverId).child("Started").setValue( isStarted );
+                    dateBeginRide = DateTime.now();
+                    LocationBeginRide = mCurrentLocation;
 
                     swipeButton.setText( "Desliza para terminar viaje ->" );
 
@@ -171,13 +177,19 @@ public class DriverMapActivity extends AppCompatActivity
                     if (positionBeginCustomer != null)
                         positionBeginCustomer.remove();
                 }else if(isStarted){
+
+                    recordRide();
+
                     customerId = "";
                     isStarted = null;
                     latitudDestination = 0;
                     longuitudDestination = 0;
 
-                    lCustomerDestination.remove();
-                    positionDestinationCustomer.remove();
+                    if (isDrawRouteDestination)
+                        lCustomerDestination.remove();
+
+                    if (positionDestinationCustomer != null)
+                        positionDestinationCustomer.remove();
                     
                     String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
                     DatabaseReference workingDriverRef = FirebaseDatabase.getInstance().getReference();
@@ -250,13 +262,7 @@ public class DriverMapActivity extends AppCompatActivity
         getAssignedCustomer();
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (!checkPermission()){
-            requestPermission();
-        }
-    }
+
 
     private Boolean checkPermission(){
         int result = ContextCompat.checkSelfPermission(context,Manifest.permission.ACCESS_FINE_LOCATION);
@@ -298,6 +304,20 @@ public class DriverMapActivity extends AppCompatActivity
         if (!isLogginOut){
             disconnectDriver();
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (!checkPermission()){
+            requestPermission();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        isLogginOut = true;
     }
 
     private void disconnectDriver(){
@@ -625,7 +645,7 @@ public class DriverMapActivity extends AppCompatActivity
 
                         List<LatLng> decodedPath = PolyUtil.decode(result.routes[0].overviewPolyline.getEncodedPath());
                         lCustomerDestination = mMap.addPolyline(new PolylineOptions().addAll(decodedPath));
-                        isDrawRoute = true;
+                        isDrawRouteDestination = true;
                         assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
 
                         if (latitudDestination != 0  && longuitudDestination != 0){
@@ -634,15 +654,15 @@ public class DriverMapActivity extends AppCompatActivity
 
                     } catch (ApiException e) {
                         e.printStackTrace();
-                        isDrawRoute = false;
+                        isDrawRouteDestination = false;
                         assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
-                        isDrawRoute = false;
+                        isDrawRouteDestination = false;
                         assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
                     } catch (IOException e) {
                         e.printStackTrace();
-                        isDrawRoute = false;
+                        isDrawRouteDestination = false;
                         assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
                     }
                 }
@@ -772,6 +792,32 @@ public class DriverMapActivity extends AppCompatActivity
 
                 }
             });
+    }
+
+    private void recordRide(){
+        String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        DatabaseReference driverRef = FirebaseDatabase.getInstance().getReference().child("Users").child("Drivers").child(driverId).child("history");
+        DatabaseReference customerRef = FirebaseDatabase.getInstance().getReference().child("Users").child("Customers").child(customerId).child("history");
+        DatabaseReference historyRef = FirebaseDatabase.getInstance().getReference().child("history");
+        String requestId = historyRef.push().getKey();
+
+        driverRef.child(requestId).setValue(true);
+        customerRef.child(requestId).setValue(true);
+
+        DateTime dateEndRide = DateTime.now();
+
+        HashMap map = new HashMap();
+        map.put("driver", driverId);
+        map.put("customer",customerId);
+        map.put("DateBeginRide",dateBeginRide);
+        map.put("LocationBeginLatitude",LocationBeginRide.getLatitude());
+        map.put("LocationBeginLongitude",LocationBeginRide.getLongitude());
+        map.put("LocationEndLatitud",mCurrentLocation.getLatitude());
+        map.put("LocationEndLongitude",mCurrentLocation.getLongitude());
+        map.put("DateEndRide",dateEndRide);
+        map.put("ratingCustomer",0);
+        historyRef.child(requestId).updateChildren(map);
+
     }
 
 }
