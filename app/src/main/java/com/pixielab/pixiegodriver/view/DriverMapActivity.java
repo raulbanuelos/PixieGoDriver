@@ -343,18 +343,19 @@ public class DriverMapActivity extends AppCompatActivity
 
     private double getDistance(){
         float distance = 0;
+        double distance1 = 0;
         //Si el arraylist solo trae un elemento la distancia por consecuencia sera 0
         if (routeDriverWorking.size() == 1)
-            return distance;
-
+            return distance1;
 
         for (int i = 1; i < routeDriverWorking.size(); i ++){
             Location location1 = routeDriverWorking.get(i);
             Location location2 = routeDriverWorking.get(i - 1);
-            distance += location1.distanceTo(location2);
-
+            float distancePoints = (float)location1.distanceTo(location2);
+            distance += distancePoints;
         }
-        return distance;
+        distance1 =  distance;
+        return distance1;
     }
 
     @Override
