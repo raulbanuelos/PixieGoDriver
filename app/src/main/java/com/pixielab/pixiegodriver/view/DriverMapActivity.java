@@ -232,8 +232,8 @@ public class DriverMapActivity extends AppCompatActivity
                             double tiempo = objCalculador.getDiff(startRide,endRide);
                             routeDriverWorking.add(mLastLocation);
                             double distancia = getDistance();
-
-                            Toast.makeText(DriverMapActivity.this, "Tiempo: " + tiempo + ", Distance: " + distancia, Toast.LENGTH_LONG).show();
+                            double tarifa = 6.0 + (1.40 * tiempo) + (3.40 * (distancia / 1000));
+                            Toast.makeText(DriverMapActivity.this, "Tiempo: " + tiempo + ", Distance: " + distancia + "Tarifa: " + tarifa, Toast.LENGTH_LONG).show();
                             //Terminamos de calcular el costo del viaje
 
 
