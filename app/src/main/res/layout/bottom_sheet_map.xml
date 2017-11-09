@@ -18,23 +18,12 @@
         android:padding="16dp"
         android:textColor="@color/editTextColorWhite"
         />
-    <com.shitij.goyal.slidebutton.SwipeButton
-        android:id="@+id/slide"
 
+    <Button
+        android:id="@+id/btnAuxStartEnd"
         android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:background="#e96251"
-
-        android:textColor="#FFF"
-        android:gravity="center"
-        android:layout_margin="20dp"
-        app:gradient_color_1="#289F2B"
-        app:gradient_color_2="#79af5d"
-        app:gradient_color_3="#e96251"
-        app:threshold="0.9"
-        app:swipe_mode="mirror"
-        app:gradient_color_2_width="100dp"
-        app:after_confirmation_background="#e96251"
-
+        android:layout_height="wrap_content"
+        android:text="Comenzar viaje"
+        android:theme="@style/RaisedButtonDark"
         />
 </LinearLayout>

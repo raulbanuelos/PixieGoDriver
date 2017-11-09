@@ -1,9 +1,15 @@
 package com.pixielab.pixiegodriver;
 
+import android.*;
+import android.Manifest;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TextInputEditText;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -21,6 +27,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.pixielab.pixiegodriver.model.Driver;
+import com.pixielab.pixiegodriver.view.CreateAccountActivity;
 import com.pixielab.pixiegodriver.view.DriverMapActivity;
 
 public class LoginActivity extends AppCompatActivity   {
@@ -28,7 +35,10 @@ public class LoginActivity extends AppCompatActivity   {
     //<editor-fold desc="TAGS">
     private static final String TAG_DRIVERS = "Drivers";
     private static final String TAG_USERS = "Users";
+    private static final int MY_PERMISSIONS_REQUEST_LOCATION = 1 ;
     //</editor-fold>
+
+    private Context context;
 
     //<editor-fold desc="Elementos">
     private Button btnLogin;
@@ -47,13 +57,14 @@ public class LoginActivity extends AppCompatActivity   {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+        context = getApplicationContext();
         inicializarProgres();
         btnLogin = (Button)findViewById(R.id.login);
         txtPassword = (TextInputEditText)findViewById(R.id.password);
         txtUserName = (TextInputEditText)findViewById(R.id.username);
 
-        txtUserName.setText("taxi7@gmail.com");
-        txtPassword.setText("12345678");
+        //txtUserName.setText("taxi7@gmail.com");
+        //txtPassword.setText("12345678");
 
         firebaseAuth = FirebaseAuth.getInstance();
 
@@ -65,6 +76,38 @@ public class LoginActivity extends AppCompatActivity   {
         });
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        //super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode){
+            case MY_PERMISSIONS_REQUEST_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    //getAssignedCustomer();
+                } else {
+                    Toast.makeText(context,"Debes permitir el acceso a la ubicación para poder usar la app.",Toast.LENGTH_LONG).show();
+                }
+                return;
+            }
+        }
+    }
+
+    private Boolean checkPermission(){
+        int result = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION);
+        if (result == PackageManager.PERMISSION_GRANTED){
+            return  true;
+        }else{
+            return false;
+        }
+    }
+
+    private void requestPermission(){
+        if (ActivityCompat.shouldShowRequestPermissionRationale(this, android.Manifest.permission.ACCESS_FINE_LOCATION)){
+            Toast.makeText(context,"GPS permission allows us to access location data. Please allow in App Settings for additional functionality.",Toast.LENGTH_LONG).show();
+        }else{
+            ActivityCompat.requestPermissions(this,new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},MY_PERMISSIONS_REQUEST_LOCATION);
+        }
+    }
 
     @Override
     protected void onStop() {
@@ -75,6 +118,15 @@ public class LoginActivity extends AppCompatActivity   {
     protected void onStart() {
         super.onStart();
     }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (!checkPermission()){
+            requestPermission();
+        }
+    }
+
     //</editor-fold>
 
     //<editor-fold desc="Métodos generales">
@@ -164,4 +216,10 @@ public class LoginActivity extends AppCompatActivity   {
         this.progressDialog = progressDialog;
     }
     //</editor-fold>
+
+    public void goCreateAccount(View view)
+    {
+        Intent intent = new Intent(this, CreateAccountActivity.class);
+        startActivity(intent);
+    }
 }

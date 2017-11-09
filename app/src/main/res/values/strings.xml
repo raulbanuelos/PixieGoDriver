@@ -23,4 +23,16 @@
     <string name="msg_ingresa_contrasena">Por favor ingresa una contraseña</string>
     <string name="msg_ingresa_usuario">Por favor ingresa un usuario</string>
     <string name="msg_account_no_active">Tu cuenta aun no a sido activada, por favor ponte en contacto con PixieLab</string>
+    <string name="hint_nombre">Nombre</string>
+    <string name="hint_apellidos">Apellidos</string>
+    <string name="hint_direccion">Dirección</string>
+    <string name="rfc">RFC</string>
+    <string name="curp">CURP</string>
+    <string name="placas">Placas</string>
+    <string name="email">Email</string>
+    <string name="hint_confirm_password">Confirma contraseña</string>
+    <string name="switch_customer_or_driver">Driver</string>
+    <string name="text_button_createaccount">Crear cuenta</string>
+    <string name="toolbar_tittle_createaccount">Crear cuenta</string>
+    <string name="msj_please_provide_permision_gps">Debes de permitir el acceso a la ubicación para poder trabajar</string>
 </resources>

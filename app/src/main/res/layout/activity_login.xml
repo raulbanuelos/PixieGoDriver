@@ -29,6 +29,7 @@
                 android:src="@drawable/logopixiego"
                 />
         </RelativeLayout>
+        <View style="@style/Divider"></View>
 
         <ScrollView
             android:layout_width="match_parent"
@@ -85,7 +86,7 @@
                         android:text="@string/dont_have_account"
                         android:textColor="@android:color/white"
                         android:textStyle="bold"
-                        android:textSize="@dimen/textsize_donthaveaccount" android:visibility="invisible"/>
+                        android:textSize="@dimen/textsize_donthaveaccount" android:visibility="invisible" />
 
                     <TextView
                         android:id="@+id/createhere"
@@ -96,7 +97,7 @@
                         android:textStyle="bold"
                         android:textSize="@dimen/textsize_donthaveaccount"
                         android:layout_toRightOf="@id/dontHaveAccount"
-                        android:onClick="goCreateAccount" android:visibility="invisible"/>
+                        android:onClick="goCreateAccount" android:visibility="invisible" />
 
                 </RelativeLayout>
             </LinearLayout>

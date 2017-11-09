@@ -1,6 +1,7 @@
 package com.pixielab.pixiegodriver.view;
 
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -12,6 +13,8 @@ import android.location.LocationManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Vibrator;
 import android.provider.ContactsContract;
 import android.provider.Settings;
@@ -24,6 +27,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.text.method.HideReturnsTransformationMethod;
+import android.view.MotionEvent;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -34,11 +38,18 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.directions.route.AbstractRouting;
+import com.directions.route.Route;
+import com.directions.route.RouteException;
+import com.directions.route.Routing;
+import com.directions.route.RoutingListener;
 import com.firebase.geofire.GeoFire;
 import com.firebase.geofire.GeoLocation;
 import com.google.android.gms.common.ConnectionResult;
@@ -60,6 +71,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Transaction;
 import com.google.firebase.database.ValueEventListener;
 import com.google.maps.DirectionsApi;
 import com.google.maps.GeoApiContext;
@@ -71,6 +83,7 @@ import com.pixielab.pixiegodriver.LoginActivity;
 import com.pixielab.pixiegodriver.R;
 import com.pixielab.pixiegodriver.model.Customer;
 import com.pixielab.pixiegodriver.model.Driver;
+import com.pixielab.pixiegodriver.model.TimeCalculator;
 import com.shitij.goyal.slidebutton.SwipeButton;
 import com.squareup.picasso.Picasso;
 
@@ -79,27 +92,34 @@ import org.joda.time.IllegalFieldValueException;
 import org.w3c.dom.Text;
 
 import java.io.IOException;
+import java.nio.channels.InterruptedByTimeoutException;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class DriverMapActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback,
-        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener {
+        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener, RoutingListener {
 
     //<editor-fold desc="TAGS">
     private static final String TAG_DRIVES = "Drivers";
     private static final int MY_PERMISSIONS_REQUEST_LOCATION = 1 ;
     //</editor-fold>
 
+    private ProgressDialog progressDialog;
+
     private Context context;
     private FloatingActionButton btnNavegarDestino;
+    private Switch mActiveSwitch;
     private MediaPlayer notificationService;
 
 
     //<editor-fold desc="Info Driver">
     private TextView txtDriverName;
     private ImageView photoDriver;
+
     //</editor-fold>
 
     //<editor-fold desc="Mapa">
@@ -111,6 +131,11 @@ public class DriverMapActivity extends AppCompatActivity
     double longuitudDestination;
     LocationRequest mLocationRequest;
     private LocationManager locationManager;
+    private SupportMapFragment mapFragment;
+    private List<Polyline> polylines;
+    private List<Location> routeDriverWorking;
+    private Date startRide;
+    private Date endRide;
 
     Polyline lDriverToCustomer; //Representa el camino del driver hacia donde se encuentra el customer.
     Marker positionBeginCustomer;
@@ -128,6 +153,8 @@ public class DriverMapActivity extends AppCompatActivity
     private BottomSheetBehavior bsb;
     TextView txtNameCustomer;
     SwipeButton swipeButton;
+
+    private Button btnAuxStartEnd;
     //</editor-fold>
 
     private Boolean isLogginOut = false;
@@ -139,13 +166,113 @@ public class DriverMapActivity extends AppCompatActivity
         setContentView(R.layout.activity_driver_map);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        polylines = new ArrayList<>();
+        routeDriverWorking = new ArrayList<>();
+
+
         context = getApplicationContext();
 
-        notificationService = MediaPlayer.create(this,R.raw.notifi);
+        setLocationManager((LocationManager) getSystemService(Context.LOCATION_SERVICE));
+        mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(DriverMapActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, MY_PERMISSIONS_REQUEST_LOCATION);
+        } else {
+            mapFragment.getMapAsync(this);
+        }
+
+        mActiveSwitch = (Switch) findViewById(R.id.activeSwitch);
+        mActiveSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
+                if (isChecked){
+                    connectDriver();
+                }else{
+                    disconnectDriver();
+                }
+            }
+        });
+
+        notificationService = MediaPlayer.create(this,R.raw.notifir);
+
+        btnAuxStartEnd = (Button) findViewById(R.id.btnAuxStartEnd);
+        btnAuxStartEnd.setOnTouchListener(new View.OnTouchListener(){
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                switch (motionEvent.getAction()){
+                    case MotionEvent.ACTION_DOWN:
+                        if (customerId != "" && isStarted == null)
+                        {
+                            startRide = new Date();
+                            String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+                            DatabaseReference workingDriverRef = FirebaseDatabase.getInstance().getReference();
+                            isStarted = true;
+                            workingDriverRef.child("DriversWorking").child(driverId).child("Started").setValue( isStarted );
+                            dateBeginRide = DateTime.now();
+                            LocationBeginRide = mCurrentLocation;
+
+                            btnAuxStartEnd.setText("Presiona para terminar el servicio");
+
+                            //swipeButton.setText( "Desliza para terminar viaje ->" );
+
+                            getDestinationCustomer();
+
+                            //if (isDrawRoute)
+                            //    lDriverToCustomer.remove();
+
+                            if (positionBeginCustomer != null)
+                                positionBeginCustomer.remove();
+                        }else if(isStarted){
+                            //Empezamos a calcular el costo del viaje
+
+                            endRide = new Date();
+                            TimeCalculator objCalculador = new TimeCalculator();
+                            double tiempo = objCalculador.getDiff(startRide,endRide);
+                            routeDriverWorking.add(mLastLocation);
+                            double distancia = getDistance();
+
+                            Toast.makeText(DriverMapActivity.this, "Tiempo: " + tiempo + ", Distance: " + distancia, Toast.LENGTH_LONG).show();
+                            //Terminamos de calcular el costo del viaje
 
 
-        swipeButton = (SwipeButton)findViewById(R.id.slide);
-        swipeButton.addOnSwipeCallback(new SwipeButton.Swipe(){
+                            recordRide();
+                            erasePolyLines();
+
+                            customerId = "";
+                            isStarted = null;
+                            latitudDestination = 0;
+                            longuitudDestination = 0;
+
+                            //if (isDrawRouteDestination)
+                            //    lCustomerDestination.remove();
+
+                            if (positionDestinationCustomer != null)
+                                positionDestinationCustomer.remove();
+
+                            String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+                            DatabaseReference workingDriverRef = FirebaseDatabase.getInstance().getReference();
+                            workingDriverRef.child("DriversWorking").child(driverId).removeValue();
+                            workingDriverRef.child( "Users" ).child( "Drivers" ).child( driverId ).child( "customerRideId" ).removeValue();
+
+                            getAssignedCustomer();
+                            bsb.setState(BottomSheetBehavior.STATE_HIDDEN);
+                            txtNameCustomer.setText("");
+                            mActiveSwitch.setVisibility(View.VISIBLE);
+                            btnNavegarDestino.setVisibility(View.INVISIBLE);
+                        }
+                        return true;
+                    case MotionEvent.ACTION_UP:
+                        return true;
+                }
+                return false;
+            }
+
+        });
+
+        //swipeButton = (SwipeButton)findViewById(R.id.slide);
+        /*swipeButton.addOnSwipeCallback(new SwipeButton.Swipe(){
             @Override
             public void onButtonPress() {
 
@@ -158,51 +285,9 @@ public class DriverMapActivity extends AppCompatActivity
 
             @Override
             public void onSwipeConfirm() {
-                if (customerId != "" && isStarted == null)
-                {
-                    String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-                    DatabaseReference workingDriverRef = FirebaseDatabase.getInstance().getReference();
-                    isStarted = true;
-                    workingDriverRef.child("DriversWorking").child(driverId).child("Started").setValue( isStarted );
-                    dateBeginRide = DateTime.now();
-                    LocationBeginRide = mCurrentLocation;
 
-                    swipeButton.setText( "Desliza para terminar viaje ->" );
-
-                    getDestinationCustomer();
-
-                    if (isDrawRoute)
-                        lDriverToCustomer.remove();
-
-                    if (positionBeginCustomer != null)
-                        positionBeginCustomer.remove();
-                }else if(isStarted){
-
-                    recordRide();
-
-                    customerId = "";
-                    isStarted = null;
-                    latitudDestination = 0;
-                    longuitudDestination = 0;
-
-                    if (isDrawRouteDestination)
-                        lCustomerDestination.remove();
-
-                    if (positionDestinationCustomer != null)
-                        positionDestinationCustomer.remove();
-                    
-                    String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-                    DatabaseReference workingDriverRef = FirebaseDatabase.getInstance().getReference();
-                    workingDriverRef.child("DriversWorking").child(driverId).removeValue();
-                    workingDriverRef.child( "Users" ).child( "Drivers" ).child( driverId ).child( "customerRideId" ).removeValue();
-
-                    getAssignedCustomer();
-                    bsb.setState(BottomSheetBehavior.STATE_HIDDEN);
-                    txtNameCustomer.setText("");
-                    btnNavegarDestino.setVisibility(View.INVISIBLE);
-                }
             }
-        });
+        });*/
 
         txtNameCustomer = (TextView) findViewById(R.id.txtCustomerName);
         bottomSheet = (LinearLayout)findViewById(R.id.bottomSheetMapDriver);
@@ -224,12 +309,6 @@ public class DriverMapActivity extends AppCompatActivity
         txtDriverName = (TextView)header.findViewById(R.id.txtDriverName);
         photoDriver = (ImageView)header.findViewById(R.id.photoDriver);
         loadInfoDriver();
-
-
-        setLocationManager((LocationManager)getSystemService(Context.LOCATION_SERVICE));
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
 
         btnNavegarDestino = (FloatingActionButton) findViewById(R.id.btnNavegarDestino);
         btnNavegarDestino.setOnClickListener(new View.OnClickListener() {
@@ -262,23 +341,20 @@ public class DriverMapActivity extends AppCompatActivity
         getAssignedCustomer();
     }
 
+    private double getDistance(){
+        float distance = 0;
+        //Si el arraylist solo trae un elemento la distancia por consecuencia sera 0
+        if (routeDriverWorking.size() == 1)
+            return distance;
 
 
-    private Boolean checkPermission(){
-        int result = ContextCompat.checkSelfPermission(context,Manifest.permission.ACCESS_FINE_LOCATION);
-        if (result == PackageManager.PERMISSION_GRANTED){
-            return  true;
-        }else{
-        return false;
+        for (int i = 1; i < routeDriverWorking.size(); i ++){
+            Location location1 = routeDriverWorking.get(i);
+            Location location2 = routeDriverWorking.get(i - 1);
+            distance += location1.distanceTo(location2);
+
         }
-    }
-
-    private void requestPermission(){
-        if (ActivityCompat.shouldShowRequestPermissionRationale(this,Manifest.permission.ACCESS_FINE_LOCATION)){
-            Toast.makeText(context,"GPS permission allows us to access location data. Please allow in App Settings for additional functionality.",Toast.LENGTH_LONG).show();
-        }else{
-            ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.ACCESS_FINE_LOCATION},MY_PERMISSIONS_REQUEST_LOCATION);
-        }
+        return distance;
     }
 
     @Override
@@ -288,30 +364,14 @@ public class DriverMapActivity extends AppCompatActivity
             case MY_PERMISSIONS_REQUEST_LOCATION: {
                 // If request is cancelled, the result arrays are empty.
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    getAssignedCustomer();
+                    mapFragment.getMapAsync(this);
                 } else {
-                    //Mostrar al usuario que no se puedes continuar sin los permisos de Location
+                    Toast.makeText(getApplicationContext(), R.string.msj_please_provide_permision_gps, Toast.LENGTH_LONG).show();
                 }
                 return;
             }
         }
 
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        if (!isLogginOut){
-            disconnectDriver();
-        }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (!checkPermission()){
-            requestPermission();
-        }
     }
 
     @Override
@@ -371,7 +431,9 @@ public class DriverMapActivity extends AppCompatActivity
         if (id == R.id.nav_inicio) {
             // Handle the camera action
         } else if (id == R.id.nav_record) {
-
+            Intent intent = new Intent(DriverMapActivity.this,RecordActivity.class);
+            startActivity(intent);
+            return true;
         } else if (id == R.id.nav_help) {
 
         } else if (id == R.id.nav_loguot) {
@@ -422,10 +484,10 @@ public class DriverMapActivity extends AppCompatActivity
                     if (isAssigned == "Yes"){
                         geoFireAvailable.removeLocation(userId);
                         geoFireWorking.removeLocation(userId);
-
                     }else if (customerId != ""){
                         geoFireAvailable.removeLocation(userId);
                         geoFireWorking.setLocation(userId, new GeoLocation(location.getLatitude(), location.getLongitude()));
+                        routeDriverWorking.add(location);
                     }else{
                         geoFireWorking.removeLocation(userId);
                         geoFireAvailable.setLocation(userId, new GeoLocation(location.getLatitude(), location.getLongitude()));
@@ -441,11 +503,13 @@ public class DriverMapActivity extends AppCompatActivity
         mLocationRequest.setFastestInterval(1000);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
+    }
+
+    private void connectDriver() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return;
+            //return;
         }
         LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
-
     }
 
     @Override
@@ -557,6 +621,7 @@ public class DriverMapActivity extends AppCompatActivity
         assignedCustomerRef.removeEventListener( mValueEventListener );
         isAssigned = "Yes";
 
+        notificationService = MediaPlayer.create(this,R.raw.notifir);
         notificationService.start();
 
         final Vibrator vibrator;
@@ -573,7 +638,7 @@ public class DriverMapActivity extends AppCompatActivity
                     public void onClick(DialogInterface dialogInterface, int i) {
                         notificationService.stop();
                         vibrator.cancel();
-
+                        erasePolyLines();
                         isAssigned = "";
 
                         String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
@@ -581,6 +646,7 @@ public class DriverMapActivity extends AppCompatActivity
                         assignedCustomerRefa.child("Users").child("Drivers").child(driverId).child("customerRideId").child("accepted").setValue(true);
                         assignedCustomerRefa.child("customerRequest").child(customerId).child("driverId").setValue(driverId);
 
+                        mActiveSwitch.setVisibility(View.INVISIBLE);
 
                         getAssignedCustomerPickupLocation();
 
@@ -588,13 +654,14 @@ public class DriverMapActivity extends AppCompatActivity
                 }).setNegativeButton("Ignorar", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
+                notificationService.stop();
                 isAssigned = "";
                 String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
                 DatabaseReference assignedCustomerRefv = FirebaseDatabase.getInstance().getReference();
                 assignedCustomerRefv.child("Users").child("Drivers").child(driverId).child("customerRideId").child("accepted").setValue(false);
                 assignedCustomerRefv.child("Users").child("Drivers").child(driverId).child("customerRideId").removeValue();
                 customerId = "";
-                isStarted = false;
+                isStarted = null;
 
                 getAssignedCustomer();
             }
@@ -603,6 +670,35 @@ public class DriverMapActivity extends AppCompatActivity
 
         final AlertDialog alertDialog = dialog.create();
         alertDialog.show();
+
+        //Begin
+        final Handler handler = new Handler();
+        final Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                if (alertDialog.isShowing()){
+                    alertDialog.dismiss();
+                    isAssigned = "";
+                    String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+                    DatabaseReference assignedCustomerRefv = FirebaseDatabase.getInstance().getReference();
+                    assignedCustomerRefv.child("Users").child("Drivers").child(driverId).child("customerRideId").child("accepted").setValue(false);
+                    assignedCustomerRefv.child("Users").child("Drivers").child(driverId).child("customerRideId").removeValue();
+                    customerId = "";
+                    isStarted = null;
+
+                    getAssignedCustomer();
+                }
+            }
+        };
+
+        alertDialog.setOnDismissListener(new DialogInterface.OnDismissListener(){
+            @Override
+            public void onDismiss(DialogInterface dialog) {
+                handler.removeCallbacks(runnable);
+            }
+        });
+        handler.postDelayed(runnable,12000);
+        //End
     }
 
     private void getDestinationCustomer(){
@@ -627,44 +723,51 @@ public class DriverMapActivity extends AppCompatActivity
                     longuitudDestination = driverLatLng.longitude;
                     positionDestinationCustomer = mMap.addMarker(new MarkerOptions().position(driverLatLng).title("destination location"));
 
+                    erasePolyLines();
+                    getRouteToMarker(driverLatLng);
+
+                    if (latitudDestination != 0  && longuitudDestination != 0){
+                        btnNavegarDestino.setVisibility(View.VISIBLE);
+                    }
+
                     //Comenzamos a pintar la ruta
-                    DateTime now = new DateTime();
+                    //DateTime now = new DateTime();
 
-                    com.google.maps.model.LatLng destino = new com.google.maps.model.LatLng(locationLat,locationLng);
-                    com.google.maps.model.LatLng origen = new com.google.maps.model.LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude());
+                    //com.google.maps.model.LatLng destino = new com.google.maps.model.LatLng(locationLat,locationLng);
+                    //com.google.maps.model.LatLng origen = new com.google.maps.model.LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude());
 
-                    try {
+                    //try {
 
                         //bsb.setState( BottomSheetBehavior.STATE_COLLAPSED );
                         //swipeButton.setText( "Desliza para termina el viaje ->" );
 
-                        DirectionsResult result = DirectionsApi.newRequest(getGeoContext())
-                                .mode(TravelMode.DRIVING).origin(origen)
-                                .destination(destino).departureTime(now)
-                                .await();
+                        //DirectionsResult result = DirectionsApi.newRequest(getGeoContext())
+                        //        .mode(TravelMode.DRIVING).origin(origen)
+                        //        .destination(destino).departureTime(now)
+                        //        .await();
 
-                        List<LatLng> decodedPath = PolyUtil.decode(result.routes[0].overviewPolyline.getEncodedPath());
-                        lCustomerDestination = mMap.addPolyline(new PolylineOptions().addAll(decodedPath));
-                        isDrawRouteDestination = true;
-                        assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
+                        //List<LatLng> decodedPath = PolyUtil.decode(result.routes[0].overviewPolyline.getEncodedPath());
+                        //lCustomerDestination = mMap.addPolyline(new PolylineOptions().addAll(decodedPath));
+                        //isDrawRouteDestination = true;
+                        //assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
 
-                        if (latitudDestination != 0  && longuitudDestination != 0){
-                            btnNavegarDestino.setVisibility(View.VISIBLE);
-                        }
+                        //if (latitudDestination != 0  && longuitudDestination != 0){
+                        //    btnNavegarDestino.setVisibility(View.VISIBLE);
+                        //}
 
-                    } catch (ApiException e) {
-                        e.printStackTrace();
-                        isDrawRouteDestination = false;
-                        assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                        isDrawRouteDestination = false;
-                        assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        isDrawRouteDestination = false;
-                        assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
-                    }
+                    //} catch (ApiException e) {
+                     //   e.printStackTrace();
+                       // isDrawRouteDestination = false;
+                        //assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
+                    //} catch (InterruptedException e) {
+                      //  e.printStackTrace();
+                        //isDrawRouteDestination = false;
+                        //assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
+                    //} catch (IOException e) {
+                        //e.printStackTrace();
+                        //isDrawRouteDestination = false;
+                        //assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
+                    //}
                 }
             }
 
@@ -714,12 +817,18 @@ public class DriverMapActivity extends AppCompatActivity
                     positionBeginCustomer = mMap.addMarker(new MarkerOptions().position(driverLatLng).title("pickup location"));
 
                     //Comenzamos a pintar la ruta
-                    DateTime now = new DateTime();
+                    //DateTime now = new DateTime();
 
-                    com.google.maps.model.LatLng destino = new com.google.maps.model.LatLng(locationLat,locationLng);
-                    com.google.maps.model.LatLng origen = new com.google.maps.model.LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude());
+                    //com.google.maps.model.LatLng destino = new com.google.maps.model.LatLng(locationLat,locationLng);
+                    //com.google.maps.model.LatLng origen = new com.google.maps.model.LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude());
 
-                    try {
+                    getRouteToMarker(driverLatLng);
+                    bsb.setState(BottomSheetBehavior.STATE_COLLAPSED);
+                    btnAuxStartEnd.setText("Preciona para iniciar el recorrido");
+                    isDrawRoute = true;
+                    assignedCustomerPickuplocationRef.removeEventListener(mValueCustomerRequets);
+
+                    /*try {
 
                         bsb.setState( BottomSheetBehavior.STATE_COLLAPSED );
                         swipeButton.setText( "Desliza para iniciar viaje ->" );
@@ -746,7 +855,7 @@ public class DriverMapActivity extends AppCompatActivity
                         e.printStackTrace();
                         isDrawRoute = false;
                         assignedCustomerPickuplocationRef.removeEventListener(mValueCustomerRequets);
-                    }
+                    }*/
                 }
             }
 
@@ -820,4 +929,71 @@ public class DriverMapActivity extends AppCompatActivity
 
     }
 
+    private void getRouteToMarker(LatLng pickupLatLng) {
+        progressDialog = ProgressDialog.show(this, "Por favor espere", "Buscando la ruta...", true);
+        Routing routing = new Routing.Builder()
+                .travelMode(AbstractRouting.TravelMode.DRIVING)
+                .withListener(this)
+                .alternativeRoutes(false)
+                .waypoints(new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude()), pickupLatLng)
+                .build();
+        routing.execute();
+    }
+
+    @Override
+    public void onRoutingFailure(RouteException e) {
+        progressDialog.dismiss();
+        if (e != null) {
+            Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        } else {
+            Toast.makeText(this, "Something went wrong, Try again", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onRoutingStart() {
+
+    }
+
+    private static final int[] COLORS = new int[]{R.color.colorPrimaryDark,R.color.colorPrimary,R.color.colorPrimaryLight,R.color.colorAccent,R.color.primary_dark_material_light};
+
+    @Override
+    public void onRoutingSuccess(ArrayList<Route> route, int shortestRouteIndex) {
+        progressDialog.dismiss();
+        if(polylines.size()>0) {
+            for (Polyline poly : polylines) {
+                poly.remove();
+            }
+        }
+
+        polylines = new ArrayList<>();
+        //add route(s) to the map.
+        for (int i = 0; i <route.size(); i++) {
+
+            //In case of more than 5 alternative routes
+            int colorIndex = i % COLORS.length;
+
+            PolylineOptions polyOptions = new PolylineOptions();
+            polyOptions.color(getResources().getColor(COLORS[colorIndex]));
+            polyOptions.width(10 + i * 3);
+            polyOptions.addAll(route.get(i).getPoints());
+            Polyline polyline = mMap.addPolyline(polyOptions);
+            polylines.add(polyline);
+
+            //Toast.makeText(getApplicationContext(),"Route "+ (i+1) +": distance - "+ route.get(i).getDistanceValue()+": duration - "+ route.get(i).getDurationValue(),Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onRoutingCancelled() {
+
+    }
+
+    private void erasePolyLines()
+    {
+        for(Polyline line: polylines){
+            line.remove();
+        }
+        polylines.clear();
+    }
 }

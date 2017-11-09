@@ -1,9 +1,169 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.pixielab.pixiegodriver.view.CreateAccountActivity">
 
-</android.support.constraint.ConstraintLayout>
+    <include layout="@layout/action_toolbar"></include>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        >
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="@dimen/activity_vertical_margin"
+            android:orientation="vertical"
+            >
+            <ImageView
+                android:layout_width="100sp"
+                android:layout_height="100sp"
+                android:id="@+id/profileImage"
+                android:src="@drawable/userdefault"
+                android:layout_margin="20sp"/>
+            <android.support.design.widget.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:theme="@style/EditTextBlack"
+                android:layout_marginTop="@dimen/edittext_margin_createaccount">
+
+                <android.support.design.widget.TextInputEditText
+                    android:id="@+id/name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/hint_nombre"/>
+            </android.support.design.widget.TextInputLayout>
+
+            <android.support.design.widget.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:theme="@style/EditTextBlack"
+                android:layout_marginTop="@dimen/edittext_margin_createaccount">
+                <android.support.design.widget.TextInputEditText
+                    android:id="@+id/apellidos"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/hint_apellidos"/>
+            </android.support.design.widget.TextInputLayout>
+
+            <android.support.design.widget.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:theme="@style/EditTextBlack"
+                android:layout_marginTop="@dimen/edittext_margin_createaccount">
+                <android.support.design.widget.TextInputEditText
+                    android:id="@+id/direccion"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/hint_direccion"/>
+            </android.support.design.widget.TextInputLayout>
+
+            <android.support.design.widget.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:theme="@style/EditTextBlack"
+                android:layout_marginTop="@dimen/edittext_margin_createaccount">
+                <android.support.design.widget.TextInputEditText
+                    android:id="@+id/RFC"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/rfc"/>
+            </android.support.design.widget.TextInputLayout>
+
+            <android.support.design.widget.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:theme="@style/EditTextBlack"
+                android:layout_marginTop="@dimen/edittext_margin_createaccount">
+                <android.support.design.widget.TextInputEditText
+                    android:id="@+id/CURP"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/curp"/>
+            </android.support.design.widget.TextInputLayout>
+
+            <android.support.design.widget.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:theme="@style/EditTextBlack"
+                android:layout_marginTop="@dimen/edittext_margin_createaccount">
+                <android.support.design.widget.TextInputEditText
+                    android:id="@+id/Placas"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/placas"/>
+            </android.support.design.widget.TextInputLayout>
+
+            <android.support.design.widget.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:theme="@style/EditTextBlack"
+                android:layout_marginTop="@dimen/edittext_margin_createaccount">
+                <android.support.design.widget.TextInputEditText
+                    android:id="@+id/email"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/email"/>
+            </android.support.design.widget.TextInputLayout>
+
+            <android.support.design.widget.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:theme="@style/EditTextBlack"
+                android:layout_marginTop="@dimen/edittext_margin_createaccount">
+                <android.support.design.widget.TextInputEditText
+                    android:id="@+id/password"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/hint_password" android:inputType="textPassword"/>
+            </android.support.design.widget.TextInputLayout>
+
+            <android.support.design.widget.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:theme="@style/EditTextBlack"
+                android:layout_marginTop="@dimen/edittext_margin_createaccount">
+                <android.support.design.widget.TextInputEditText
+                    android:id="@+id/confirmpassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/hint_confirm_password" android:inputType="textPassword"/>
+            </android.support.design.widget.TextInputLayout>
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center">
+
+                <android.support.v7.widget.SwitchCompat
+                    android:id="@+id/isDriver"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:text="@string/switch_customer_or_driver"
+                    android:textColor="@color/editTextColorBlack"
+                    android:textStyle="bold"
+                    android:textSize="@dimen/textsize_donthaveaccount"
+                    android:visibility="invisible"
+                    />
+
+            </RelativeLayout>
+
+            <Button
+                android:id="@+id/joinUs"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/text_button_createaccount"
+                android:theme="@style/RaisedButtonDark"
+
+                />
+
+        </LinearLayout>
+
+    </ScrollView>
+</android.support.design.widget.CoordinatorLayout>

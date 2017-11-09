@@ -3,12 +3,12 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 26
     buildToolsVersion "26.0.0"
-    defaultConfig {
-        applicationId "com.pixielab.pixiegodriver"
+        defaultConfig {
+            applicationId "com.pixielab.pixiegodriver"
         minSdkVersion 17
         targetSdkVersion 26
-        versionCode 1
-        versionName "1.0"
+        versionCode 5
+        versionName "1.01"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -31,15 +31,18 @@ dependencies {
     compile 'com.google.firebase:firebase-core:10.2.1'
     compile 'com.google.firebase:firebase-database:10.2.1'
     compile 'com.google.firebase:firebase-auth:10.2.1'
+    compile 'com.google.firebase:firebase-storage:10.2.1'
     compile 'com.google.android.gms:play-services-maps:10.2.1'
     compile 'com.google.android.gms:play-services-location:10.2.1'
     compile 'com.google.maps:google-maps-services:0.1.20'
-    compile 'com.google.maps.android:android-maps-utils:0.4+'
+    compile 'com.google.maps.android:android-maps-utils:0.4.+'
     compile 'joda-time:joda-time:2.9.4'
     compile 'com.squareup.picasso:picasso:2.5.2'
-    testCompile 'junit:junit:4.12'
+    compile 'com.github.jd-alexander:library:1.1.0'
     compile 'com.shitij.goyal:slide-button:1.0.0'
+    testCompile 'junit:junit:4.12'
 }
+
 
 
 
