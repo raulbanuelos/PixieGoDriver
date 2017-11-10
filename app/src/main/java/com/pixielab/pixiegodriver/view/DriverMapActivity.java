@@ -235,6 +235,7 @@ public class DriverMapActivity extends AppCompatActivity
                             double distancia = getDistance();
                             tarifa = 0.0;
                             tarifa = 6.0 + (1.40 * tiempo) + (3.40 * (distancia / 1000));
+                            tarifa = roundPlaces(tarifa,2);
                             //Toast.makeText(DriverMapActivity.this, "Tarifa: " + tarifa, Toast.LENGTH_LONG).show();
                             AlertDialog alertDialog = new AlertDialog.Builder(DriverMapActivity.this).create();
                             alertDialog.setTitle("TARIFA");
@@ -353,6 +354,13 @@ public class DriverMapActivity extends AppCompatActivity
         });
         getAssignedCustomer();
     }
+                
+    public double roundPlaces(double val, int places) {
+            long factor = (long)Math.pow(10,places); 
+            val = val * factor;
+            long tmp = Math.round(val);
+            return (double)tmp / factor; 
+    }           
 
     private double getDistance(){
         float distance = 0;
