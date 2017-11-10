@@ -136,6 +136,7 @@ public class DriverMapActivity extends AppCompatActivity
     private List<Location> routeDriverWorking;
     private Date startRide;
     private Date endRide;
+    double tarifa;
 
     Polyline lDriverToCustomer; //Representa el camino del driver hacia donde se encuentra el customer.
     Marker positionBeginCustomer;
@@ -232,8 +233,20 @@ public class DriverMapActivity extends AppCompatActivity
                             double tiempo = objCalculador.getDiff(startRide,endRide);
                             routeDriverWorking.add(mLastLocation);
                             double distancia = getDistance();
-                            double tarifa = 6.0 + (1.40 * tiempo) + (3.40 * (distancia / 1000));
-                            Toast.makeText(DriverMapActivity.this, "Tiempo: " + tiempo + ", Distance: " + distancia + "Tarifa: " + tarifa, Toast.LENGTH_LONG).show();
+                            tarifa = 0.0;
+                            tarifa = 6.0 + (1.40 * tiempo) + (3.40 * (distancia / 1000));
+                            //Toast.makeText(DriverMapActivity.this, "Tarifa: " + tarifa, Toast.LENGTH_LONG).show();
+                            AlertDialog alertDialog = new AlertDialog.Builder(DriverMapActivity.this).create();
+                            alertDialog.setTitle("TARIFA");
+                            alertDialog.setMessage("Distancia: " + distancia + "\n Tiempo recorrido:" + tiempo + "\nLa tarifa del viaje es: " + tarifa);
+                            alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
+                                    new DialogInterface.OnClickListener() {
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            dialog.dismiss();
+                                        }
+                                    });
+                            alertDialog.show();
+
                             //Terminamos de calcular el costo del viaje
 
 
@@ -488,13 +501,26 @@ public class DriverMapActivity extends AppCompatActivity
                     }else if (customerId != ""){
                         geoFireAvailable.removeLocation(userId);
                         geoFireWorking.setLocation(userId, new GeoLocation(location.getLatitude(), location.getLongitude()));
-                        routeDriverWorking.add(location);
+                        if (isStarted != null && isStarted)
+                            addLocationRoute(location);
+
                     }else{
                         geoFireWorking.removeLocation(userId);
                         geoFireAvailable.setLocation(userId, new GeoLocation(location.getLatitude(), location.getLongitude()));
                     }
                 }
             }
+    }
+
+    private void addLocationRoute(Location mlocation){
+        if (routeDriverWorking.size()> 0){
+            Location lastLocation = routeDriverWorking.get(routeDriverWorking.size() - 1);
+            if (lastLocation.getLatitude() != mlocation.getLatitude() && lastLocation.getLongitude() != mlocation.getLongitude()){
+                routeDriverWorking.add(mlocation);
+            }
+        }
+        else
+            routeDriverWorking.add(mlocation);
     }
 
     @Override
@@ -926,6 +952,7 @@ public class DriverMapActivity extends AppCompatActivity
         map.put("LocationEndLongitude",mCurrentLocation.getLongitude());
         map.put("DateEndRide",dateEndRide);
         map.put("ratingCustomer",0);
+        map.put("rate",tarifa);
         historyRef.child(requestId).updateChildren(map);
 
     }
