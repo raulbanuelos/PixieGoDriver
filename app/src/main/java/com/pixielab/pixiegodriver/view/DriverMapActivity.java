@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -56,11 +57,13 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
@@ -112,6 +115,7 @@ public class DriverMapActivity extends AppCompatActivity
 
     private Context context;
     private FloatingActionButton btnNavegarDestino;
+    private FloatingActionButton btnPanico;
     private Switch mActiveSwitch;
     private MediaPlayer notificationService;
 
@@ -209,6 +213,7 @@ public class DriverMapActivity extends AppCompatActivity
                             startRide = new Date();
                             String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
                             DatabaseReference workingDriverRef = FirebaseDatabase.getInstance().getReference();
+                            routeDriverWorking.clear();
                             isStarted = true;
                             workingDriverRef.child("DriversWorking").child(driverId).child("Started").setValue( isStarted );
                             dateBeginRide = DateTime.now();
@@ -230,16 +235,16 @@ public class DriverMapActivity extends AppCompatActivity
 
                             endRide = new Date();
                             TimeCalculator objCalculador = new TimeCalculator();
-                            double tiempo = objCalculador.getDiff(startRide,endRide);
+                            double tiempo = roundPlaces(objCalculador.getDiff(startRide,endRide),2);
                             routeDriverWorking.add(mLastLocation);
-                            double distancia = getDistance();
+                            double distancia = roundPlaces( getDistance(),2);
                             tarifa = 0.0;
-                            tarifa = 6.0 + (1.40 * tiempo) + (3.40 * (distancia / 1000));
+                            tarifa = 6.0 + (1.38 * tiempo) + (3.37 * (distancia / 1000));
                             tarifa = roundPlaces(tarifa,2);
                             //Toast.makeText(DriverMapActivity.this, "Tarifa: " + tarifa, Toast.LENGTH_LONG).show();
                             AlertDialog alertDialog = new AlertDialog.Builder(DriverMapActivity.this).create();
                             alertDialog.setTitle("TARIFA");
-                            alertDialog.setMessage("Distancia: " + distancia + "\n Tiempo recorrido:" + tiempo + "\nLa tarifa del viaje es: " + tarifa);
+                            alertDialog.setMessage("La tarifa del viaje es: " + tarifa);
                             alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
                                     new DialogInterface.OnClickListener() {
                                         public void onClick(DialogInterface dialog, int which) {
@@ -251,7 +256,7 @@ public class DriverMapActivity extends AppCompatActivity
                             //Terminamos de calcular el costo del viaje
 
 
-                            recordRide();
+                            recordRide(distancia,tiempo);
                             erasePolyLines();
 
                             customerId = "";
@@ -324,6 +329,36 @@ public class DriverMapActivity extends AppCompatActivity
         photoDriver = (ImageView)header.findViewById(R.id.photoDriver);
         loadInfoDriver();
 
+        btnPanico = (FloatingActionButton) findViewById(R.id.btnPanico);
+        btnPanico.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view) {
+                String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+                DatabaseReference driverRef = FirebaseDatabase.getInstance().getReference().child("Users").child("Drivers").child(driverId).child("panic");
+                DatabaseReference panicRef = FirebaseDatabase.getInstance().getReference().child("panic");
+
+                String requestID = panicRef.push().getKey();
+
+                driverRef.child(requestID).setValue(true);
+
+                HashMap map = new HashMap();
+                map.put("customer",customerId);
+                map.put("driver",driverId);
+                panicRef.child(requestID).updateChildren(map);
+
+                DatabaseReference panicIdRef  = FirebaseDatabase.getInstance().getReference().child("panic").child(requestID);
+
+                HashMap map1 = new HashMap();
+                map1.put("0",mLastLocation.getLatitude());
+                map1.put("1",mLastLocation.getLongitude());
+                panicIdRef.child("l").updateChildren(map1);
+
+                Toast.makeText(getApplicationContext(), R.string.msj_make_panic, Toast.LENGTH_LONG).show();
+
+
+            }
+        });
+
         btnNavegarDestino = (FloatingActionButton) findViewById(R.id.btnNavegarDestino);
         btnNavegarDestino.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -372,8 +407,10 @@ public class DriverMapActivity extends AppCompatActivity
         for (int i = 1; i < routeDriverWorking.size(); i ++){
             Location location1 = routeDriverWorking.get(i);
             Location location2 = routeDriverWorking.get(i - 1);
-            float distancePoints = (float)location1.distanceTo(location2);
-            distance += distancePoints;
+            //float distancePoints = (float)location1.distanceTo(location2);
+            float[] results = new float[3];
+            Location.distanceBetween(location1.getLatitude(), location1.getLongitude(), location2.getLatitude(),location2.getLongitude(), results);
+            distance += results[0];
         }
         distance1 =  distance;
         return distance1;
@@ -524,7 +561,9 @@ public class DriverMapActivity extends AppCompatActivity
         if (routeDriverWorking.size()> 0){
             Location lastLocation = routeDriverWorking.get(routeDriverWorking.size() - 1);
             if (lastLocation.getLatitude() != mlocation.getLatitude() && lastLocation.getLongitude() != mlocation.getLongitude()){
-                routeDriverWorking.add(mlocation);
+                float mdistance =  lastLocation.distanceTo(routeDriverWorking.get(routeDriverWorking.size() - 1));
+                //if (mdistance > 10)
+                    routeDriverWorking.add(mlocation);
             }
         }
         else
@@ -938,7 +977,7 @@ public class DriverMapActivity extends AppCompatActivity
             });
     }
 
-    private void recordRide(){
+    private void recordRide(double travelDistance, double travelTime){
         String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         DatabaseReference driverRef = FirebaseDatabase.getInstance().getReference().child("Users").child("Drivers").child(driverId).child("history");
         DatabaseReference customerRef = FirebaseDatabase.getInstance().getReference().child("Users").child("Customers").child(customerId).child("history");
@@ -960,12 +999,21 @@ public class DriverMapActivity extends AppCompatActivity
         map.put("LocationEndLongitude",mCurrentLocation.getLongitude());
         map.put("DateEndRide",dateEndRide);
         map.put("ratingCustomer",0);
+        map.put("travelTime", travelTime);
+        map.put("travelDistance", travelDistance);
         map.put("rate",tarifa);
+
         historyRef.child(requestId).updateChildren(map);
 
     }
 
+    //Se utilizan solo para ser referencia de los puntos que se van a pintar.
+    private LatLng mDestinationLocation;
+    private LatLng mLatLngCurretn;
     private void getRouteToMarker(LatLng pickupLatLng) {
+        mDestinationLocation = pickupLatLng;
+        mLatLngCurretn = new LatLng(mCurrentLocation.getLatitude(),mCurrentLocation.getLongitude());
+
         progressDialog = ProgressDialog.show(this, "Por favor espere", "Buscando la ruta...", true);
         Routing routing = new Routing.Builder()
                 .travelMode(AbstractRouting.TravelMode.DRIVING)
@@ -995,6 +1043,19 @@ public class DriverMapActivity extends AppCompatActivity
 
     @Override
     public void onRoutingSuccess(ArrayList<Route> route, int shortestRouteIndex) {
+
+        LatLngBounds.Builder builder = new LatLngBounds.Builder();
+        builder.include(mLatLngCurretn);
+        builder.include(mDestinationLocation);
+        LatLngBounds bounds = builder.build();
+
+        int width = getResources().getDisplayMetrics().widthPixels;
+        int padding = (int)(width * 0.2);
+
+        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds,padding);
+        mMap.animateCamera(cameraUpdate);
+
+
         progressDialog.dismiss();
         if(polylines.size()>0) {
             for (Polyline poly : polylines) {

@@ -35,4 +35,5 @@
     <string name="text_button_createaccount">Crear cuenta</string>
     <string name="toolbar_tittle_createaccount">Crear cuenta</string>
     <string name="msj_please_provide_permision_gps">Debes de permitir el acceso a la ubicación para poder trabajar</string>
+    <string name="msj_make_panic">TU ALERTA FUE RECIBIDA, EN INSTANTES NUESTRO DEPARTAMENTO SE COMUNICARÁ CONTIGO</string>
 </resources>

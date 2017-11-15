@@ -19,7 +19,9 @@ tools:showIn="@layout/app_bar_driver_map">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent" android:orientation="vertical">
+        android:layout_height="match_parent" android:orientation="vertical"
+        android:layout_centerVertical="true"
+        android:layout_alignParentStart="true">
 
         <Switch
             android:layout_width="wrap_content"
@@ -38,9 +40,19 @@ tools:showIn="@layout/app_bar_driver_map">
             android:src="@drawable/ic_shortcut_navigation"
             android:visibility="invisible"
             >
-
         </android.support.design.widget.FloatingActionButton>
 
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/btnPanico"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center|left"
+            android:layout_alignParentEnd="true"
+            android:src="@mipmap/sirenamorada"
+            android:padding="2dp"
+            >
+
+        </android.support.design.widget.FloatingActionButton>
     </LinearLayout>
 
 
