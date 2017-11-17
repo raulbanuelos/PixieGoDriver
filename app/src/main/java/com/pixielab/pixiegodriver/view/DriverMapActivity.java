@@ -140,7 +140,8 @@ public class DriverMapActivity extends AppCompatActivity
     private List<Location> routeDriverWorking;
     private Date startRide;
     private Date endRide;
-    double tarifa;
+    private double tarifa;
+    private float rideDistance;
 
     Polyline lDriverToCustomer; //Representa el camino del driver hacia donde se encuentra el customer.
     Marker positionBeginCustomer;
@@ -211,6 +212,8 @@ public class DriverMapActivity extends AppCompatActivity
                         if (customerId != "" && isStarted == null)
                         {
                             startRide = new Date();
+                            rideDistance = 0;
+
                             String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
                             DatabaseReference workingDriverRef = FirebaseDatabase.getInstance().getReference();
                             routeDriverWorking.clear();
@@ -236,14 +239,20 @@ public class DriverMapActivity extends AppCompatActivity
                             endRide = new Date();
                             TimeCalculator objCalculador = new TimeCalculator();
                             double tiempo = roundPlaces(objCalculador.getDiff(startRide,endRide),2);
-                            routeDriverWorking.add(mLastLocation);
-                            double distancia = roundPlaces( getDistance(),2);
+                            //routeDriverWorking.add(mLastLocation);
+                            //double distancia = roundPlaces( getDistance(),2);
+
                             tarifa = 0.0;
-                            tarifa = 6.0 + (1.38 * tiempo) + (3.37 * (distancia / 1000));
+                            //tarifa = 6.0 + (1.38 * tiempo) + (3.37 * (distancia / 1000));
+
+
+                            tarifa = 6.0 + (1.38 * tiempo)+ (3.37 * Double.valueOf( rideDistance));
+
                             tarifa = roundPlaces(tarifa,2);
                             //Toast.makeText(DriverMapActivity.this, "Tarifa: " + tarifa, Toast.LENGTH_LONG).show();
                             AlertDialog alertDialog = new AlertDialog.Builder(DriverMapActivity.this).create();
                             alertDialog.setTitle("TARIFA");
+                            //alertDialog.setMessage("Distancia " + rideDistance + "\nTiempo: " + tiempo  +"\nLa tarifa del viaje es: " + tarifa);
                             alertDialog.setMessage("La tarifa del viaje es: " + tarifa);
                             alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
                                     new DialogInterface.OnClickListener() {
@@ -256,7 +265,7 @@ public class DriverMapActivity extends AppCompatActivity
                             //Terminamos de calcular el costo del viaje
 
 
-                            recordRide(distancia,tiempo);
+                            recordRide(rideDistance,tiempo);
                             erasePolyLines();
 
                             customerId = "";
@@ -521,7 +530,15 @@ public class DriverMapActivity extends AppCompatActivity
             if (mLastLocation == null)
                 mLastLocation = location;
 
+
+
             if (getApplicationContext() != null){
+
+                if (isAssigned != "Yes" && customerId != "" && isStarted != null && isStarted)
+                {
+                    rideDistance += mCurrentLocation.distanceTo(location) / 1000;
+                }
+
                 mCurrentLocation = location;
 
                 float distance = mCurrentLocation.distanceTo(mLastLocation);
@@ -546,9 +563,6 @@ public class DriverMapActivity extends AppCompatActivity
                     }else if (customerId != ""){
                         geoFireAvailable.removeLocation(userId);
                         geoFireWorking.setLocation(userId, new GeoLocation(location.getLatitude(), location.getLongitude()));
-                        if (isStarted != null && isStarted)
-                            addLocationRoute(location);
-
                     }else{
                         geoFireWorking.removeLocation(userId);
                         geoFireAvailable.setLocation(userId, new GeoLocation(location.getLatitude(), location.getLongitude()));
