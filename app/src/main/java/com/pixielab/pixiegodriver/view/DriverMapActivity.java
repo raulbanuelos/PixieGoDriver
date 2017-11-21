@@ -252,8 +252,8 @@ public class DriverMapActivity extends AppCompatActivity
                             //Toast.makeText(DriverMapActivity.this, "Tarifa: " + tarifa, Toast.LENGTH_LONG).show();
                             AlertDialog alertDialog = new AlertDialog.Builder(DriverMapActivity.this).create();
                             alertDialog.setTitle("TARIFA");
-                            //alertDialog.setMessage("Distancia " + rideDistance + "\nTiempo: " + tiempo  +"\nLa tarifa del viaje es: " + tarifa);
-                            alertDialog.setMessage("La tarifa del viaje es: " + tarifa);
+                            alertDialog.setMessage("Distancia " + rideDistance + "\nTiempo: " + tiempo  +"\nLa tarifa del viaje es: " + tarifa);
+                            //alertDialog.setMessage("La tarifa del viaje es: " + tarifa);
                             alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
                                     new DialogInterface.OnClickListener() {
                                         public void onClick(DialogInterface dialog, int which) {
@@ -344,18 +344,23 @@ public class DriverMapActivity extends AppCompatActivity
             public void onClick(View view) {
                 String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
                 DatabaseReference driverRef = FirebaseDatabase.getInstance().getReference().child("Users").child("Drivers").child(driverId).child("panic");
-                DatabaseReference panicRef = FirebaseDatabase.getInstance().getReference().child("panic");
+                DatabaseReference panicRef = FirebaseDatabase.getInstance().getReference().child("panic").child("new");
 
                 String requestID = panicRef.push().getKey();
 
                 driverRef.child(requestID).setValue(true);
 
+                if (customerId.equals(null))
+                    customerId = "";
+
                 HashMap map = new HashMap();
+                map.put("appLaunched",2);
                 map.put("customer",customerId);
                 map.put("driver",driverId);
+                map.put("date",new Date());
                 panicRef.child(requestID).updateChildren(map);
 
-                DatabaseReference panicIdRef  = FirebaseDatabase.getInstance().getReference().child("panic").child(requestID);
+                DatabaseReference panicIdRef  = FirebaseDatabase.getInstance().getReference().child("panic").child("new").child(requestID);
 
                 HashMap map1 = new HashMap();
                 map1.put("0",mLastLocation.getLatitude());
@@ -449,6 +454,7 @@ public class DriverMapActivity extends AppCompatActivity
     }
 
     private void disconnectDriver(){
+        btnPanico.setVisibility(View.INVISIBLE);
         LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient,this);
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         DatabaseReference ref = FirebaseDatabase.getInstance().getReference("DriversAvailable");
@@ -594,6 +600,7 @@ public class DriverMapActivity extends AppCompatActivity
     }
 
     private void connectDriver() {
+        btnPanico.setVisibility(View.VISIBLE);
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             //return;
         }

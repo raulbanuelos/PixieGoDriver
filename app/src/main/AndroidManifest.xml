@@ -19,7 +19,11 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <service android:name=".view.onAppKilled" android:stopWithTask="false"></service>
         <activity android:name=".LoginActivity">
+
+        </activity>
+        <activity android:name=".SplashActivity" android:theme="@style/SplashTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -52,7 +56,7 @@
             android:label="@string/title_activity_driver_map"
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme" />
-        <activity android:name=".view.RecordActivity"></activity>
+        <activity android:name=".view.RecordActivity" />
     </application>
 
 </manifest>

@@ -51,6 +51,7 @@ tools:showIn="@layout/app_bar_driver_map"
             android:layout_gravity="center|left"
             android:layout_alignParentEnd="true"
             android:src="@mipmap/sirenamorada"
+            android:visibility="invisible"
             android:padding="2dp"
             >
 

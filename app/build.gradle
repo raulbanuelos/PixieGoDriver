@@ -3,12 +3,12 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 26
     buildToolsVersion "26.0.0"
-        defaultConfig {
-            applicationId "com.pixielab.pixiegodriver"
+    defaultConfig {
+        applicationId "com.pixielab.pixiegodriver"
         minSdkVersion 17
         targetSdkVersion 26
-        versionCode 10
-        versionName "1.05"
+        versionCode 12
+        versionName "1.06"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -42,6 +42,8 @@ dependencies {
     compile 'com.shitij.goyal:slide-button:1.0.0'
     testCompile 'junit:junit:4.12'
 }
+
+
 
 
 
