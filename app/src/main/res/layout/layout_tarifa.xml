@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:weightSum="1">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="0.4" android:background="@color/colorPrimary">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true" android:orientation="vertical">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:text="@string/lblTarifa"
+                    android:textSize="50sp"
+                    android:textColor="@android:color/white"
+                    />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TextView
+                        android:id="@+id/lblTarifa"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerInParent="true"
+                        android:text="47.57"
+                        android:textSize="50sp"
+                        android:textColor="@android:color/white"
+                        />
+                </LinearLayout>
+            </LinearLayout>
+
+        </RelativeLayout>
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="0.6" android:background="@color/colorPrimary"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" android:orientation="vertical">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:text="Detalles de tu viaje:"
+
+                    android:textSize="20sp"
+                    android:textColor="@android:color/white"
+                    />
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp" android:background="@color/colorAccent">
+                </View>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_centerInParent="true"
+                            android:text="Duración: "
+                            android:textSize="20sp"
+                            android:padding="10sp"
+                            android:textColor="@android:color/white"
+                            />
+                        <TextView
+                            android:id="@+id/lblDuracion"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_centerInParent="true"
+                            android:text="13 min."
+                            android:textSize="20sp"
+                            android:textColor="@android:color/white"
+                            />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:orientation="horizontal">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerInParent="true"
+                        android:text="Distancia: "
+                        android:textSize="20sp"
+                        android:padding="10sp"
+                        android:textColor="@android:color/white"
+                        />
+                    <TextView
+                        android:id="@+id/lblDistancia"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerInParent="true"
+                        android:text="5.3 km."
+                        android:textSize="20sp"
+                        android:textColor="@android:color/white"
+                        />
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/btnAceptarTarifa"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Aceptar"
+                    android:padding="10sp"
+                    android:theme="@style/RaisedButtonDark"
+                    />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="20sp"></LinearLayout>
+
+            </LinearLayout>
+        </ScrollView>
+    </LinearLayout>
+
+</LinearLayout>

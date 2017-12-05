@@ -28,6 +28,8 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.text.method.HideReturnsTransformationMethod;
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -76,12 +78,15 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Transaction;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.maps.DirectionsApi;
 import com.google.maps.GeoApiContext;
 import com.google.maps.android.PolyUtil;
 import com.google.maps.errors.ApiException;
 import com.google.maps.model.DirectionsResult;
 import com.google.maps.model.TravelMode;
+import com.pixielab.pixiegodriver.HistoryActiviy;
 import com.pixielab.pixiegodriver.LoginActivity;
 import com.pixielab.pixiegodriver.R;
 import com.pixielab.pixiegodriver.model.Customer;
@@ -95,6 +100,7 @@ import org.joda.time.IllegalFieldValueException;
 import org.w3c.dom.Text;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.channels.InterruptedByTimeoutException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -109,6 +115,7 @@ public class DriverMapActivity extends AppCompatActivity
     //<editor-fold desc="TAGS">
     private static final String TAG_DRIVES = "Drivers";
     private static final int MY_PERMISSIONS_REQUEST_LOCATION = 1 ;
+    private static final String TAG = "Token";
     //</editor-fold>
 
     private ProgressDialog progressDialog;
@@ -165,6 +172,8 @@ public class DriverMapActivity extends AppCompatActivity
 
     private Boolean isLogginOut = false;
 
+    private AlertDialog alertTarifa;
+
     //<editor-fold desc="Status of Activity">
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -172,6 +181,11 @@ public class DriverMapActivity extends AppCompatActivity
         setContentView(R.layout.activity_driver_map);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        String token = FirebaseInstanceId.getInstance().getToken();
+        Log.w(TAG, "token: " + token);
+        FirebaseMessaging.getInstance().subscribeToTopic("InfoGralConductores");
+
 
         polylines = new ArrayList<>();
         routeDriverWorking = new ArrayList<>();
@@ -245,12 +259,81 @@ public class DriverMapActivity extends AppCompatActivity
                             tarifa = 0.0;
                             //tarifa = 6.0 + (1.38 * tiempo) + (3.37 * (distancia / 1000));
 
+                            rideDistance = roundPlaces(rideDistance,2);
 
                             tarifa = 6.0 + (1.38 * tiempo)+ (3.37 * Double.valueOf( rideDistance));
-
                             tarifa = roundPlaces(tarifa,2);
+
+
+                            if (tarifa < 20)
+                                tarifa = 20;
+
                             //Toast.makeText(DriverMapActivity.this, "Tarifa: " + tarifa, Toast.LENGTH_LONG).show();
-                            AlertDialog alertDialog = new AlertDialog.Builder(DriverMapActivity.this).create();
+
+                            //Terminamos de calcular el costo del viaje
+                            recordTarifa();
+                            recordRide(rideDistance,tiempo);
+
+
+                            //Empieza dialog personalizado
+                            LayoutInflater inflater = getLayoutInflater();
+                            View dialoglayout = inflater.inflate(R.layout.layout_tarifa, null);
+
+                            final TextView mTarifa = (TextView) dialoglayout.findViewById(R.id.lblTarifa);
+                            final TextView mDuracion = (TextView) dialoglayout.findViewById(R.id.lblDuracion);
+                            final TextView mDistancia = (TextView) dialoglayout.findViewById(R.id.lblDistancia);
+                            final Button mButtonAceptarTarifa = (Button) dialoglayout.findViewById(R.id.btnAceptarTarifa);
+                            mButtonAceptarTarifa.setOnClickListener(new View.OnClickListener(){
+                                @Override
+                                public void onClick(View view) {
+                                    erasePolyLines();
+
+                                    customerId = "";
+                                    isStarted = null;
+                                    latitudDestination = 0;
+                                    longuitudDestination = 0;
+
+                                    //if (isDrawRouteDestination)
+                                    //    lCustomerDestination.remove();
+
+                                    if (positionDestinationCustomer != null)
+                                        positionDestinationCustomer.remove();
+
+                                    String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+                                    DatabaseReference workingDriverRef = FirebaseDatabase.getInstance().getReference();
+                                    workingDriverRef.child("DriversWorking").child(driverId).removeValue();
+                                    workingDriverRef.child( "Users" ).child( "Drivers" ).child( driverId ).child( "customerRideId" ).removeValue();
+
+                                    getAssignedCustomer();
+                                    bsb.setState(BottomSheetBehavior.STATE_HIDDEN);
+                                    txtNameCustomer.setText("");
+                                    mActiveSwitch.setVisibility(View.VISIBLE);
+                                    btnNavegarDestino.setVisibility(View.INVISIBLE);
+                                    alertTarifa.cancel();
+
+                                }
+                            });
+
+
+
+                            mTarifa.setText("$" + tarifa);
+                            mDuracion.setText(tiempo + " min.");
+                            mDistancia.setText(rideDistance + " km.");
+
+
+
+                            AlertDialog.Builder builder = new AlertDialog.Builder(DriverMapActivity.this);
+                            builder.setView(dialoglayout);
+                            builder.setCancelable(false);
+
+                            alertTarifa = builder.create();
+                            alertTarifa.show();
+
+                            //builder.show();
+
+                            //Termina dialog personalizado
+
+                            /*AlertDialog alertDialog = new AlertDialog.Builder(DriverMapActivity.this).create();
                             alertDialog.setTitle("TARIFA");
                             alertDialog.setMessage("Distancia " + rideDistance + "\nTiempo: " + tiempo  +"\nLa tarifa del viaje es: " + tarifa);
                             //alertDialog.setMessage("La tarifa del viaje es: " + tarifa);
@@ -261,11 +344,9 @@ public class DriverMapActivity extends AppCompatActivity
                                         }
                                     });
                             alertDialog.show();
+                            */
 
-                            //Terminamos de calcular el costo del viaje
-
-
-                            recordRide(rideDistance,tiempo);
+                            /*
                             erasePolyLines();
 
                             customerId = "";
@@ -288,7 +369,7 @@ public class DriverMapActivity extends AppCompatActivity
                             bsb.setState(BottomSheetBehavior.STATE_HIDDEN);
                             txtNameCustomer.setText("");
                             mActiveSwitch.setVisibility(View.VISIBLE);
-                            btnNavegarDestino.setVisibility(View.INVISIBLE);
+                            btnNavegarDestino.setVisibility(View.INVISIBLE);*/
                         }
                         return true;
                     case MotionEvent.ACTION_UP:
@@ -403,7 +484,13 @@ public class DriverMapActivity extends AppCompatActivity
         });
         getAssignedCustomer();
     }
-                
+
+    public float roundPlaces(float d, int decimalPlace) {
+        BigDecimal bd = new BigDecimal(Float.toString(d));
+        bd = bd.setScale(decimalPlace, BigDecimal.ROUND_HALF_UP);
+        return bd.floatValue();
+    }
+
     public double roundPlaces(double val, int places) {
             long factor = (long)Math.pow(10,places); 
             val = val * factor;
@@ -505,9 +592,7 @@ public class DriverMapActivity extends AppCompatActivity
         if (id == R.id.nav_inicio) {
             // Handle the camera action
         } else if (id == R.id.nav_record) {
-            Intent intent = new Intent(DriverMapActivity.this,RecordActivity.class);
-            startActivity(intent);
-            return true;
+            goHistory();
         } else if (id == R.id.nav_help) {
 
         } else if (id == R.id.nav_loguot) {
@@ -517,6 +602,13 @@ public class DriverMapActivity extends AppCompatActivity
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    private void goHistory() {
+        //Intent intent = new Intent(DriverMapActivity.this, HistoryActiviy.class);
+        //intent.putExtra("customerOrDriver","Drivers");
+        //startActivity(intent);
+        //return;
     }
 
     private void LogOut(){
@@ -996,6 +1088,13 @@ public class DriverMapActivity extends AppCompatActivity
 
                 }
             });
+    }
+
+    private void recordTarifa() {
+        //customerId
+        DatabaseReference customerRequestRef = FirebaseDatabase.getInstance().getReference().child("customerRequest").child(customerId).child("rate");
+        customerRequestRef.setValue(tarifa);
+
     }
 
     private void recordRide(double travelDistance, double travelTime){

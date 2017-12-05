@@ -7,8 +7,8 @@ android {
         applicationId "com.pixielab.pixiegodriver"
         minSdkVersion 17
         targetSdkVersion 26
-        versionCode 12
-        versionName "1.06"
+        versionCode 15
+        versionName "1.09"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -40,12 +40,8 @@ dependencies {
     compile 'com.squareup.picasso:picasso:2.5.2'
     compile 'com.github.jd-alexander:library:1.1.0'
     compile 'com.shitij.goyal:slide-button:1.0.0'
+    compile 'com.google.firebase:firebase-messaging:10.2.1'
+    compile 'com.android.support:recyclerview-v7:26.+'
     testCompile 'junit:junit:4.12'
 }
-
-
-
-
-
-
 apply plugin: 'com.google.gms.google-services'

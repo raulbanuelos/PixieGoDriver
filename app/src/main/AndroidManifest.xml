@@ -19,11 +19,14 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <service android:name=".view.onAppKilled" android:stopWithTask="false"></service>
-        <activity android:name=".LoginActivity">
+        <service
+            android:name=".view.onAppKilled"
+            android:stopWithTask="false" />
 
-        </activity>
-        <activity android:name=".SplashActivity" android:theme="@style/SplashTheme">
+        <activity android:name=".LoginActivity" />
+        <activity
+            android:name=".SplashActivity"
+            android:theme="@style/SplashTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -56,7 +59,20 @@
             android:label="@string/title_activity_driver_map"
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme" />
-        <activity android:name=".view.RecordActivity" />
+
+        <service android:name=".PixieFirebaseInstanceIdService">
+            <intent-filter>
+                <action android:name="com.google.firebase.INSTANCE_ID_EVENT" />
+            </intent-filter>
+        </service>
+        <service android:name=".PixieFirebaseMessaginService">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <activity android:name=".HistoryActiviy" />
+        <activity android:name=".historyRecyclerView.HistorySingleActivity"></activity>
     </application>
 
 </manifest>
