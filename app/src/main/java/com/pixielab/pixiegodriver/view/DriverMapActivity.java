@@ -401,6 +401,7 @@ public class DriverMapActivity extends AppCompatActivity
         txtNameCustomer = (TextView) findViewById(R.id.txtCustomerName);
         bottomSheet = (LinearLayout)findViewById(R.id.bottomSheetMapDriver);
         bsb = BottomSheetBehavior.from(bottomSheet);
+        bsb.setPeekHeight(0);
         bsb.setState(BottomSheetBehavior.STATE_HIDDEN);
 
 
@@ -605,10 +606,10 @@ public class DriverMapActivity extends AppCompatActivity
     }
 
     private void goHistory() {
-        //Intent intent = new Intent(DriverMapActivity.this, HistoryActiviy.class);
-        //intent.putExtra("customerOrDriver","Drivers");
-        //startActivity(intent);
-        //return;
+        Intent intent = new Intent(DriverMapActivity.this, HistoryActiviy.class);
+        intent.putExtra("customerOrDriver","Drivers");
+        startActivity(intent);
+        return;
     }
 
     private void LogOut(){

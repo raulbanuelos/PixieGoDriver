@@ -67,7 +67,7 @@
                 android:layout_height="wrap_content"
                 android:text="Name"
                 android:layout_marginBottom="20sp"
-                android:id="@+id/userName"
+                android:id="@+id/txtUserName"
                 />
 
             <TextView
@@ -75,7 +75,7 @@
                 android:layout_height="wrap_content"
                 android:text="Phone"
                 android:layout_marginBottom="20sp"
-                android:id="@+id/userPhone"
+                android:id="@+id/txtUserPhone"
                 />
         </LinearLayout>
 
