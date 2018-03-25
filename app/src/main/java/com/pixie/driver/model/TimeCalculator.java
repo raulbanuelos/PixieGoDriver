@@ -1,4 +1,4 @@
-package com.pixielab.pixiegodriver.model;
+package com.pixie.driver.model;
 
 /**
  * Created by raulb on 08/11/2017.

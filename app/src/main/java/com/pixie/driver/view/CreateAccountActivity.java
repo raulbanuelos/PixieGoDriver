@@ -1,4 +1,4 @@
-package com.pixielab.pixiegodriver.view;
+package com.pixie.driver.view;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -28,8 +28,8 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
-import com.pixielab.pixiegodriver.R;
-import com.pixielab.pixiegodriver.model.Driver;
+import com.pixie.driver.R;
+import com.pixie.driver.model.Driver;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

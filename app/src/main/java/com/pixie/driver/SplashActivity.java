@@ -1,10 +1,10 @@
-package com.pixielab.pixiegodriver;
+package com.pixie.driver;
 
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
-import com.pixielab.pixiegodriver.view.onAppKilled;
+import com.pixie.driver.view.onAppKilled;
 
 public class SplashActivity extends AppCompatActivity {
 

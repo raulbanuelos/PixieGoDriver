@@ -1,4 +1,4 @@
-package com.pixielab.pixiegodriver.historyRecyclerView;
+package com.pixie.driver.historyRecyclerView;
 
 /**
  * Created by raulb on 26/11/2017.

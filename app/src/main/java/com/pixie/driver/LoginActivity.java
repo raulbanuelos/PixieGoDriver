@@ -1,6 +1,5 @@
-package com.pixielab.pixiegodriver;
+package com.pixie.driver;
 
-import android.*;
 import android.Manifest;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -20,15 +19,14 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-import com.pixielab.pixiegodriver.model.Driver;
-import com.pixielab.pixiegodriver.view.CreateAccountActivity;
-import com.pixielab.pixiegodriver.view.DriverMapActivity;
+import com.pixie.driver.model.Driver;
+import com.pixie.driver.view.CreateAccountActivity;
+import com.pixie.driver.view.DriverMapActivity;
 
 public class LoginActivity extends AppCompatActivity   {
 
@@ -63,8 +61,8 @@ public class LoginActivity extends AppCompatActivity   {
         txtPassword = (TextInputEditText)findViewById(R.id.password);
         txtUserName = (TextInputEditText)findViewById(R.id.username);
 
-        txtUserName.setText("taxi7@gmail.com");
-        txtPassword.setText("12345678");
+        txtUserName.setText("");
+        txtPassword.setText("");
 
         firebaseAuth = FirebaseAuth.getInstance();
 

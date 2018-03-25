@@ -1,6 +1,5 @@
-package com.pixielab.pixiegodriver.historyRecyclerView;
+package com.pixie.driver.historyRecyclerView;
 
-import android.app.ProgressDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.ImageView;
@@ -27,11 +26,8 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-import com.pixielab.pixiegodriver.R;
-import com.pixielab.pixiegodriver.view.DriverMapActivity;
+import com.pixie.driver.R;
 import com.squareup.picasso.Picasso;
-
-import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.List;

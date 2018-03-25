@@ -1,4 +1,4 @@
-package com.pixielab.pixiegodriver.historyRecyclerView;
+package com.pixie.driver.historyRecyclerView;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -6,9 +6,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.widget.TextView;
 
-import com.pixielab.pixiegodriver.R;
-
-import org.w3c.dom.Text;
+import com.pixie.driver.R;
 
 /**
  * Created by raulb on 26/11/2017.

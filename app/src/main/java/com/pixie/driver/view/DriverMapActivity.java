@@ -1,4 +1,4 @@
-package com.pixielab.pixiegodriver.view;
+package com.pixie.driver.view;
 
 import android.Manifest;
 import android.app.ProgressDialog;
@@ -7,27 +7,20 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.res.Resources;
 import android.location.Location;
-import android.location.LocationListener;
 import android.location.LocationManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.Vibrator;
-import android.provider.ContactsContract;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
-import android.text.method.HideReturnsTransformationMethod;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -71,37 +64,26 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Transaction;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.messaging.FirebaseMessaging;
-import com.google.maps.DirectionsApi;
 import com.google.maps.GeoApiContext;
-import com.google.maps.android.PolyUtil;
-import com.google.maps.errors.ApiException;
-import com.google.maps.model.DirectionsResult;
-import com.google.maps.model.TravelMode;
-import com.pixielab.pixiegodriver.HistoryActiviy;
-import com.pixielab.pixiegodriver.LoginActivity;
-import com.pixielab.pixiegodriver.R;
-import com.pixielab.pixiegodriver.model.Customer;
-import com.pixielab.pixiegodriver.model.Driver;
-import com.pixielab.pixiegodriver.model.TimeCalculator;
+import com.pixie.driver.HistoryActiviy;
+import com.pixie.driver.LoginActivity;
+import com.pixie.driver.R;
+import com.pixie.driver.model.Customer;
+import com.pixie.driver.model.Driver;
+import com.pixie.driver.model.TimeCalculator;
 import com.shitij.goyal.slidebutton.SwipeButton;
 import com.squareup.picasso.Picasso;
 
 import org.joda.time.DateTime;
-import org.joda.time.IllegalFieldValueException;
-import org.w3c.dom.Text;
 
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.channels.InterruptedByTimeoutException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -168,9 +150,11 @@ public class DriverMapActivity extends AppCompatActivity
     SwipeButton swipeButton;
 
     private Button btnAuxStartEnd;
+    private Button btnCancelarViaje;
     //</editor-fold>
 
     private Boolean isLogginOut = false;
+    private Boolean banUserCancelled = false;
 
     private AlertDialog alertTarifa;
 
@@ -216,6 +200,39 @@ public class DriverMapActivity extends AppCompatActivity
         });
 
         notificationService = MediaPlayer.create(this,R.raw.notifir);
+
+        btnCancelarViaje = (Button) findViewById(R.id.btnCancelarViaje);
+        btnCancelarViaje.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                switch (motionEvent.getAction()){
+                    case MotionEvent.ACTION_DOWN:
+                        final AlertDialog.Builder dialog = new AlertDialog.Builder(DriverMapActivity.this);
+                        dialog.setTitle("Confirmación")
+                                .setCancelable(false)
+                                .setMessage("¿Estas seguro que quieres cancelar el servicio? \n Cancelar el servicio afecta a tu reputación e imagen.")
+                                .setPositiveButton("Si, si quiero cancelar", new DialogInterface.OnClickListener(){
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+                                        DatabaseReference refDriverCancelled = FirebaseDatabase.getInstance().getReference("DriversWorking").child(userId).child("driverCancelled");
+                                        refDriverCancelled.setValue(true);
+
+                                        terminarViajeCancelado();
+
+                                    }
+                                }).setNegativeButton("No quiero cancelar", new DialogInterface.OnClickListener(){
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+
+                            }
+                        });
+                        dialog.show();
+                }
+                return false;
+            }
+        });
 
         btnAuxStartEnd = (Button) findViewById(R.id.btnAuxStartEnd);
         btnAuxStartEnd.setOnTouchListener(new View.OnTouchListener(){
@@ -305,7 +322,7 @@ public class DriverMapActivity extends AppCompatActivity
                                     workingDriverRef.child( "Users" ).child( "Drivers" ).child( driverId ).child( "customerRideId" ).removeValue();
 
                                     getAssignedCustomer();
-                                    bsb.setState(BottomSheetBehavior.STATE_HIDDEN);
+                                    bsb.setState(BottomSheetBehavior.STATE_COLLAPSED);
                                     txtNameCustomer.setText("");
                                     mActiveSwitch.setVisibility(View.VISIBLE);
                                     btnNavegarDestino.setVisibility(View.INVISIBLE);
@@ -314,13 +331,9 @@ public class DriverMapActivity extends AppCompatActivity
                                 }
                             });
 
-
-
                             mTarifa.setText("$" + tarifa);
                             mDuracion.setText(tiempo + " min.");
                             mDistancia.setText(rideDistance + " km.");
-
-
 
                             AlertDialog.Builder builder = new AlertDialog.Builder(DriverMapActivity.this);
                             builder.setView(dialoglayout);
@@ -348,23 +361,18 @@ public class DriverMapActivity extends AppCompatActivity
 
                             /*
                             erasePolyLines();
-
                             customerId = "";
                             isStarted = null;
                             latitudDestination = 0;
                             longuitudDestination = 0;
-
                             //if (isDrawRouteDestination)
                             //    lCustomerDestination.remove();
-
                             if (positionDestinationCustomer != null)
                                 positionDestinationCustomer.remove();
-
                             String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
                             DatabaseReference workingDriverRef = FirebaseDatabase.getInstance().getReference();
                             workingDriverRef.child("DriversWorking").child(driverId).removeValue();
                             workingDriverRef.child( "Users" ).child( "Drivers" ).child( driverId ).child( "customerRideId" ).removeValue();
-
                             getAssignedCustomer();
                             bsb.setState(BottomSheetBehavior.STATE_HIDDEN);
                             txtNameCustomer.setText("");
@@ -384,17 +392,12 @@ public class DriverMapActivity extends AppCompatActivity
         /*swipeButton.addOnSwipeCallback(new SwipeButton.Swipe(){
             @Override
             public void onButtonPress() {
-
             }
-
             @Override
             public void onSwipeCancel() {
-
             }
-
             @Override
             public void onSwipeConfirm() {
-
             }
         });*/
 
@@ -486,6 +489,34 @@ public class DriverMapActivity extends AppCompatActivity
         getAssignedCustomer();
     }
 
+    public void terminarViajeCancelado(){
+        erasePolyLines();
+
+        customerId = "";
+        isStarted = null;
+        latitudDestination = 0;
+        longuitudDestination = 0;
+
+        //if (isDrawRouteDestination)
+        //    lCustomerDestination.remove();
+
+        if (positionDestinationCustomer != null)
+            positionDestinationCustomer.remove();
+
+        String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        DatabaseReference workingDriverRef = FirebaseDatabase.getInstance().getReference();
+        workingDriverRef.child("DriversWorking").child(driverId).removeValue();
+        workingDriverRef.child( "Users" ).child( "Drivers" ).child( driverId ).child( "customerRideId" ).removeValue();
+
+        getAssignedCustomer();
+        bsb.setState(BottomSheetBehavior.STATE_COLLAPSED);
+        txtNameCustomer.setText("");
+        mActiveSwitch.setVisibility(View.VISIBLE);
+        btnNavegarDestino.setVisibility(View.INVISIBLE);
+
+        //alertTarifa.cancel();
+    }
+
     public float roundPlaces(float d, int decimalPlace) {
         BigDecimal bd = new BigDecimal(Float.toString(d));
         bd = bd.setScale(decimalPlace, BigDecimal.ROUND_HALF_UP);
@@ -493,11 +524,11 @@ public class DriverMapActivity extends AppCompatActivity
     }
 
     public double roundPlaces(double val, int places) {
-            long factor = (long)Math.pow(10,places); 
-            val = val * factor;
-            long tmp = Math.round(val);
-            return (double)tmp / factor; 
-    }           
+        long factor = (long)Math.pow(10,places);
+        val = val * factor;
+        long tmp = Math.round(val);
+        return (double)tmp / factor;
+    }
 
     private double getDistance(){
         float distance = 0;
@@ -626,48 +657,53 @@ public class DriverMapActivity extends AppCompatActivity
     @Override
     public void onLocationChanged(Location location) {
 
-            if (mLastLocation == null)
+        if (mLastLocation == null)
+            mLastLocation = location;
+
+
+
+        if (getApplicationContext() != null){
+
+            if (isAssigned != "Yes" && customerId != "" && isStarted != null && isStarted)
+            {
+                rideDistance += mCurrentLocation.distanceTo(location) / 1000;
+            }
+
+            mCurrentLocation = location;
+
+            float distance = mCurrentLocation.distanceTo(mLastLocation);
+
+            if (distance > 100){
+                LatLng latLng = new LatLng(location.getLatitude(),location.getLongitude());
+                mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+                mMap.animateCamera(CameraUpdateFactory.zoomTo(17));
                 mLastLocation = location;
+            }
 
+            String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+            if (userId != null){
+                DatabaseReference refAvailable = FirebaseDatabase.getInstance().getReference("DriversAvailable");
+                DatabaseReference refWorking = FirebaseDatabase.getInstance().getReference("DriversWorking");
+                GeoFire geoFireAvailable = new GeoFire(refAvailable);
+                GeoFire geoFireWorking = new GeoFire(refWorking);
 
-
-            if (getApplicationContext() != null){
-
-                if (isAssigned != "Yes" && customerId != "" && isStarted != null && isStarted)
-                {
-                    rideDistance += mCurrentLocation.distanceTo(location) / 1000;
-                }
-
-                mCurrentLocation = location;
-
-                float distance = mCurrentLocation.distanceTo(mLastLocation);
-
-                if (distance > 100){
-                    LatLng latLng = new LatLng(location.getLatitude(),location.getLongitude());
-                    mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-                    mMap.animateCamera(CameraUpdateFactory.zoomTo(17));
-                    mLastLocation = location;
-                }
-
-                String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-                if (userId != null){
-                    DatabaseReference refAvailable = FirebaseDatabase.getInstance().getReference("DriversAvailable");
-                    DatabaseReference refWorking = FirebaseDatabase.getInstance().getReference("DriversWorking");
-                    GeoFire geoFireAvailable = new GeoFire(refAvailable);
-                    GeoFire geoFireWorking = new GeoFire(refWorking);
-
-                    if (isAssigned == "Yes"){
-                        geoFireAvailable.removeLocation(userId);
-                        geoFireWorking.removeLocation(userId);
-                    }else if (customerId != ""){
-                        geoFireAvailable.removeLocation(userId);
-                        geoFireWorking.setLocation(userId, new GeoLocation(location.getLatitude(), location.getLongitude()));
-                    }else{
-                        geoFireWorking.removeLocation(userId);
-                        geoFireAvailable.setLocation(userId, new GeoLocation(location.getLatitude(), location.getLongitude()));
+                if (isAssigned == "Yes"){
+                    geoFireAvailable.removeLocation(userId);
+                    geoFireWorking.removeLocation(userId);
+                }else if (customerId != ""){
+                    geoFireAvailable.removeLocation(userId);
+                    geoFireWorking.setLocation(userId, new GeoLocation(location.getLatitude(), location.getLongitude()));
+                    //Para inicializar el listener de si el usuario cancelo.
+                    if (!banUserCancelled){
+                        banUserCancelled = true;
+                        listenerUserCancelled();
                     }
+                }else{
+                    geoFireWorking.removeLocation(userId);
+                    geoFireAvailable.setLocation(userId, new GeoLocation(location.getLatitude(), location.getLongitude()));
                 }
             }
+        }
     }
 
     private void addLocationRoute(Location mlocation){
@@ -676,7 +712,7 @@ public class DriverMapActivity extends AppCompatActivity
             if (lastLocation.getLatitude() != mlocation.getLatitude() && lastLocation.getLongitude() != mlocation.getLongitude()){
                 float mdistance =  lastLocation.distanceTo(routeDriverWorking.get(routeDriverWorking.size() - 1));
                 //if (mdistance > 10)
-                    routeDriverWorking.add(mlocation);
+                routeDriverWorking.add(mlocation);
             }
         }
         else
@@ -772,6 +808,42 @@ public class DriverMapActivity extends AppCompatActivity
         mGoogleApiClient.connect();
     }
     //</editor-fold>
+    private ValueEventListener mValueUserCancelledEventListener;
+    DatabaseReference refUserCancelled;
+    private void listenerUserCancelled(){
+        String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        refUserCancelled = FirebaseDatabase.getInstance().getReference().child("DriversWorking").child(driverId).child("userCancelled");
+        mValueUserCancelledEventListener = refUserCancelled.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (dataSnapshot.exists()){
+                    String userCancelled = dataSnapshot.getValue().toString();
+                    //avisar al conductor que se cancelo
+                    final AlertDialog.Builder dialog = new AlertDialog.Builder(DriverMapActivity.this);
+
+                    dialog.setTitle("Confirmación")
+                            .setCancelable(true)
+                            .setMessage("Por alguna razón el pasajero no estaba preparado para tomar el viaje \n y ha decidido cancelar el viaje.")
+                            .setPositiveButton("Enterado", new DialogInterface.OnClickListener(){
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    //mValueUserCancelledEventListener
+                                    refUserCancelled.removeEventListener(mValueUserCancelledEventListener);
+                                }
+                            });
+
+                    dialog.show();
+
+                    terminarViajeCancelado();
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
 
     //<editor-fold desc="Customer request">
     private DatabaseReference assignedCustomerRef;
@@ -926,35 +998,35 @@ public class DriverMapActivity extends AppCompatActivity
 
                     //try {
 
-                        //bsb.setState( BottomSheetBehavior.STATE_COLLAPSED );
-                        //swipeButton.setText( "Desliza para termina el viaje ->" );
+                    //bsb.setState( BottomSheetBehavior.STATE_COLLAPSED );
+                    //swipeButton.setText( "Desliza para termina el viaje ->" );
 
-                        //DirectionsResult result = DirectionsApi.newRequest(getGeoContext())
-                        //        .mode(TravelMode.DRIVING).origin(origen)
-                        //        .destination(destino).departureTime(now)
-                        //        .await();
+                    //DirectionsResult result = DirectionsApi.newRequest(getGeoContext())
+                    //        .mode(TravelMode.DRIVING).origin(origen)
+                    //        .destination(destino).departureTime(now)
+                    //        .await();
 
-                        //List<LatLng> decodedPath = PolyUtil.decode(result.routes[0].overviewPolyline.getEncodedPath());
-                        //lCustomerDestination = mMap.addPolyline(new PolylineOptions().addAll(decodedPath));
-                        //isDrawRouteDestination = true;
-                        //assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
+                    //List<LatLng> decodedPath = PolyUtil.decode(result.routes[0].overviewPolyline.getEncodedPath());
+                    //lCustomerDestination = mMap.addPolyline(new PolylineOptions().addAll(decodedPath));
+                    //isDrawRouteDestination = true;
+                    //assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
 
-                        //if (latitudDestination != 0  && longuitudDestination != 0){
-                        //    btnNavegarDestino.setVisibility(View.VISIBLE);
-                        //}
+                    //if (latitudDestination != 0  && longuitudDestination != 0){
+                    //    btnNavegarDestino.setVisibility(View.VISIBLE);
+                    //}
 
                     //} catch (ApiException e) {
-                     //   e.printStackTrace();
-                       // isDrawRouteDestination = false;
-                        //assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
+                    //   e.printStackTrace();
+                    // isDrawRouteDestination = false;
+                    //assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
                     //} catch (InterruptedException e) {
-                      //  e.printStackTrace();
-                        //isDrawRouteDestination = false;
-                        //assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
+                    //  e.printStackTrace();
+                    //isDrawRouteDestination = false;
+                    //assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
                     //} catch (IOException e) {
-                        //e.printStackTrace();
-                        //isDrawRouteDestination = false;
-                        //assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
+                    //e.printStackTrace();
+                    //isDrawRouteDestination = false;
+                    //assignedCustomerDestination.removeEventListener(mValueCustomerRequetsDestination);
                     //}
                 }
             }
@@ -1011,26 +1083,22 @@ public class DriverMapActivity extends AppCompatActivity
                     //com.google.maps.model.LatLng origen = new com.google.maps.model.LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude());
 
                     getRouteToMarker(driverLatLng);
-                    bsb.setState(BottomSheetBehavior.STATE_COLLAPSED);
+                    bsb.setState(BottomSheetBehavior.STATE_EXPANDED);
                     btnAuxStartEnd.setText("Preciona para iniciar el recorrido");
                     isDrawRoute = true;
                     assignedCustomerPickuplocationRef.removeEventListener(mValueCustomerRequets);
 
                     /*try {
-
                         bsb.setState( BottomSheetBehavior.STATE_COLLAPSED );
                         swipeButton.setText( "Desliza para iniciar viaje ->" );
-
                         DirectionsResult result = DirectionsApi.newRequest(getGeoContext())
                                 .mode(TravelMode.DRIVING).origin(origen)
                                 .destination(destino).departureTime(now)
                                 .await();
-
                         List<LatLng> decodedPath = PolyUtil.decode(result.routes[0].overviewPolyline.getEncodedPath());
                         lDriverToCustomer = mMap.addPolyline(new PolylineOptions().addAll(decodedPath));
                         isDrawRoute = true;
                         assignedCustomerPickuplocationRef.removeEventListener(mValueCustomerRequets);
-
                     } catch (ApiException e) {
                         e.printStackTrace();
                         isDrawRoute = false;
@@ -1067,28 +1135,28 @@ public class DriverMapActivity extends AppCompatActivity
 
     private void loadInfoDriver(){
 
-            String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-            DatabaseReference ref = FirebaseDatabase.getInstance().getReference().child("Users").child(TAG_DRIVES).child(driverId);
-            ref.addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot dataSnapshot) {
-                    if(dataSnapshot.exists()){
-                        Driver driver = dataSnapshot.getValue(Driver.class);
-                        String nombre = driver.getName();
-                        String apellidos = driver.getLastName();
-                        String urlPhoto = driver.getProfileImageUrl();
-                        Picasso.with(DriverMapActivity.this).load(urlPhoto).into(photoDriver);
-                        txtDriverName.setText(nombre + " " + apellidos);
-
-                    }
-                }
-
-                @Override
-                public void onCancelled(DatabaseError databaseError) {
+        DatabaseReference ref = FirebaseDatabase.getInstance().getReference().child("Users").child(TAG_DRIVES).child(driverId);
+        ref.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if(dataSnapshot.exists()){
+                    Driver driver = dataSnapshot.getValue(Driver.class);
+                    String nombre = driver.getName();
+                    String apellidos = driver.getLastName();
+                    String urlPhoto = driver.getProfileImageUrl();
+                    Picasso.with(DriverMapActivity.this).load(urlPhoto).into(photoDriver);
+                    txtDriverName.setText(nombre + " " + apellidos);
 
                 }
-            });
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
     }
 
     private void recordTarifa() {

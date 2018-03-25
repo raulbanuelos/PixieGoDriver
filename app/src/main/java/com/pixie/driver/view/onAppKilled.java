@@ -1,4 +1,4 @@
-package com.pixielab.pixiegodriver.view;
+package com.pixie.driver.view;
 
 import android.app.Service;
 import android.content.Intent;

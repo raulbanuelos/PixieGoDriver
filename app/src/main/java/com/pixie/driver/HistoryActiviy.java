@@ -1,4 +1,4 @@
-package com.pixielab.pixiegodriver;
+package com.pixie.driver;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -11,11 +11,10 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-import com.pixielab.pixiegodriver.historyRecyclerView.HistoryAdapter;
-import com.pixielab.pixiegodriver.historyRecyclerView.HistoryObject;
+import com.pixie.driver.historyRecyclerView.HistoryAdapter;
+import com.pixie.driver.historyRecyclerView.HistoryObject;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class HistoryActiviy extends AppCompatActivity {
 

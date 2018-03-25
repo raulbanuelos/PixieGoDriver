@@ -1,6 +1,4 @@
-package com.pixielab.pixiegodriver.model;
-
-import java.lang.ref.SoftReference;
+package com.pixie.driver.model;
 
 /**
  * Created by raulb on 25/11/2017.

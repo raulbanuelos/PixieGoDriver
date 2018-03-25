@@ -1,4 +1,4 @@
-package com.pixielab.pixiegodriver;
+package com.pixie.driver;
 
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;

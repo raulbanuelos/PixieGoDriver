@@ -1,4 +1,4 @@
-package com.pixielab.pixiegodriver.historyRecyclerView;
+package com.pixie.driver.historyRecyclerView;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
@@ -6,7 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.pixielab.pixiegodriver.R;
+import com.pixie.driver.R;
 
 import java.util.List;
 

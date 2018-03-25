@@ -1,4 +1,4 @@
-package com.pixielab.pixiegodriver;
+package com.pixie.driver;
 
 import org.junit.Test;
 

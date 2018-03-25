@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.pixielab.pixiegodriver">
+    package="com.pixie.driver">
 
     <!--
          The ACCESS_COARSE/FINE_LOCATION permissions are not required to use
@@ -20,12 +20,12 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <service
-            android:name=".view.onAppKilled"
+            android:name="com.pixie.driver.view.onAppKilled"
             android:stopWithTask="false" />
 
-        <activity android:name=".LoginActivity" />
+        <activity android:name="com.pixie.driver.LoginActivity" />
         <activity
-            android:name=".SplashActivity"
+            android:name="com.pixie.driver.SplashActivity"
             android:theme="@style/SplashTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -33,9 +33,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".view.CreateAccountActivity" />
+        <activity android:name="com.pixie.driver.view.CreateAccountActivity" />
         <activity
-            android:name=".ReferenciaActivity"
+            android:name="com.pixie.driver.ReferenciaActivity"
             android:label="@string/title_activity_referencia"
             android:theme="@style/AppTheme" />
         <!--
@@ -51,28 +51,28 @@
             android:value="@string/google_maps_key" />
 
         <activity
-            android:name=".ReferenciaMapsActivity"
+            android:name="com.pixie.driver.ReferenciaMapsActivity"
             android:label="@string/title_activity_referencia_maps" />
         <activity
-            android:name=".view.DriverMapActivity"
+            android:name="com.pixie.driver.view.DriverMapActivity"
             android:configChanges="orientation|keyboardHidden"
             android:label="@string/title_activity_driver_map"
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme" />
 
-        <service android:name=".PixieFirebaseInstanceIdService">
+        <service android:name="com.pixie.driver.PixieFirebaseInstanceIdService">
             <intent-filter>
                 <action android:name="com.google.firebase.INSTANCE_ID_EVENT" />
             </intent-filter>
         </service>
-        <service android:name=".PixieFirebaseMessaginService">
+        <service android:name="com.pixie.driver.PixieFirebaseMessaginService">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
 
-        <activity android:name=".HistoryActiviy" />
-        <activity android:name=".historyRecyclerView.HistorySingleActivity"></activity>
+        <activity android:name="com.pixie.driver.HistoryActiviy" />
+        <activity android:name="com.pixie.driver.historyRecyclerView.HistorySingleActivity"></activity>
     </application>
 
 </manifest>
