@@ -5,7 +5,6 @@
     <item android:width="200dp"
         android:height="200dp"
         android:gravity="center">
-        <bitmap android:src="@mipmap/ic_launcher"
-           />
+        <bitmap android:src="@drawable/tagsi_logo" />
     </item>
 </layer-list>

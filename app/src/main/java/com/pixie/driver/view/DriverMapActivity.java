@@ -1,12 +1,14 @@
 package com.pixie.driver.view;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationManager;
 import android.media.MediaPlayer;
@@ -64,6 +66,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -82,8 +85,11 @@ import com.shitij.goyal.slidebutton.SwipeButton;
 import com.squareup.picasso.Picasso;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
 
 import java.math.BigDecimal;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -112,6 +118,7 @@ public class DriverMapActivity extends AppCompatActivity
     //<editor-fold desc="Info Driver">
     private TextView txtDriverName;
     private ImageView photoDriver;
+    private TextView txtSpeed;
 
     //</editor-fold>
 
@@ -136,7 +143,7 @@ public class DriverMapActivity extends AppCompatActivity
     Marker positionBeginCustomer;
     private Boolean isDrawRoute = true;
     private Boolean isDrawRouteDestination = false;
-    private DateTime dateBeginRide;
+    private Date dateBeginRide;
 
     Polyline lCustomerDestination;  //Representa el camino destino que eligió el cliente.
     Marker positionDestinationCustomer; //Represtna el marker del destino del cliente.
@@ -155,19 +162,33 @@ public class DriverMapActivity extends AppCompatActivity
 
     private Boolean isLogginOut = false;
     private Boolean banUserCancelled = false;
+    private Boolean IsPrivate;
 
     private AlertDialog alertTarifa;
+    private AlertDialog alertExit;
+
 
     //<editor-fold desc="Status of Activity">
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_driver_map);
+
+        txtSpeed = (TextView) findViewById(R.id.txtVelocimetro);
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        Intent iin= getIntent();
+        Bundle b = iin.getExtras();
+        if (b != null){
+            IsPrivate = (Boolean)b.get("IsPrivate");
+        }else{
+            IsPrivate = false;
+        }
+
         String token = FirebaseInstanceId.getInstance().getToken();
-        Log.w(TAG, "token: " + token);
+        //Log.w(TAG, "token: " + token);
         FirebaseMessaging.getInstance().subscribeToTopic("InfoGralConductores");
 
 
@@ -188,6 +209,7 @@ public class DriverMapActivity extends AppCompatActivity
         }
 
         mActiveSwitch = (Switch) findViewById(R.id.activeSwitch);
+
         mActiveSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
@@ -202,6 +224,7 @@ public class DriverMapActivity extends AppCompatActivity
         notificationService = MediaPlayer.create(this,R.raw.notifir);
 
         btnCancelarViaje = (Button) findViewById(R.id.btnCancelarViaje);
+
         btnCancelarViaje.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
@@ -220,6 +243,8 @@ public class DriverMapActivity extends AppCompatActivity
                                         refDriverCancelled.setValue(true);
 
                                         terminarViajeCancelado();
+
+                                        mMap.clear();
 
                                     }
                                 }).setNegativeButton("No quiero cancelar", new DialogInterface.OnClickListener(){
@@ -250,8 +275,10 @@ public class DriverMapActivity extends AppCompatActivity
                             routeDriverWorking.clear();
                             isStarted = true;
                             workingDriverRef.child("DriversWorking").child(driverId).child("Started").setValue( isStarted );
-                            dateBeginRide = DateTime.now();
+                            dateBeginRide = new Date();
                             LocationBeginRide = mCurrentLocation;
+
+                            btnCancelarViaje.setVisibility(View.INVISIBLE);
 
                             btnAuxStartEnd.setText("Presiona para terminar el servicio");
 
@@ -278,12 +305,12 @@ public class DriverMapActivity extends AppCompatActivity
 
                             rideDistance = roundPlaces(rideDistance,2);
 
-                            tarifa = 6.0 + (1.38 * tiempo)+ (3.37 * Double.valueOf( rideDistance));
+                            tarifa = 12 + (0.75 * tiempo)+ (3.0 * Double.valueOf( rideDistance));
                             tarifa = roundPlaces(tarifa,2);
 
 
-                            if (tarifa < 20)
-                                tarifa = 20;
+                            //if (tarifa < 20)
+                            //    tarifa = 20;
 
                             //Toast.makeText(DriverMapActivity.this, "Tarifa: " + tarifa, Toast.LENGTH_LONG).show();
 
@@ -325,7 +352,8 @@ public class DriverMapActivity extends AppCompatActivity
                                     bsb.setState(BottomSheetBehavior.STATE_COLLAPSED);
                                     txtNameCustomer.setText("");
                                     mActiveSwitch.setVisibility(View.VISIBLE);
-                                    btnNavegarDestino.setVisibility(View.INVISIBLE);
+                                    //btnNavegarDestino.setVisibility(View.INVISIBLE);
+                                    btnNavegarDestino.hide();
                                     alertTarifa.cancel();
 
                                 }
@@ -387,19 +415,6 @@ public class DriverMapActivity extends AppCompatActivity
             }
 
         });
-
-        //swipeButton = (SwipeButton)findViewById(R.id.slide);
-        /*swipeButton.addOnSwipeCallback(new SwipeButton.Swipe(){
-            @Override
-            public void onButtonPress() {
-            }
-            @Override
-            public void onSwipeCancel() {
-            }
-            @Override
-            public void onSwipeConfirm() {
-            }
-        });*/
 
         txtNameCustomer = (TextView) findViewById(R.id.txtCustomerName);
         bottomSheet = (LinearLayout)findViewById(R.id.bottomSheetMapDriver);
@@ -512,7 +527,8 @@ public class DriverMapActivity extends AppCompatActivity
         bsb.setState(BottomSheetBehavior.STATE_COLLAPSED);
         txtNameCustomer.setText("");
         mActiveSwitch.setVisibility(View.VISIBLE);
-        btnNavegarDestino.setVisibility(View.INVISIBLE);
+        //btnNavegarDestino.setVisibility(View.INVISIBLE);
+        btnNavegarDestino.hide();
 
         //alertTarifa.cancel();
     }
@@ -530,7 +546,7 @@ public class DriverMapActivity extends AppCompatActivity
         return (double)tmp / factor;
     }
 
-    private double getDistance(){
+    /*private double getDistance(){
         float distance = 0;
         double distance1 = 0;
         //Si el arraylist solo trae un elemento la distancia por consecuencia sera 0
@@ -547,7 +563,7 @@ public class DriverMapActivity extends AppCompatActivity
         }
         distance1 =  distance;
         return distance1;
-    }
+    }*/
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -566,14 +582,18 @@ public class DriverMapActivity extends AppCompatActivity
 
     }
 
+    private boolean IsBackground = false;
+
     @Override
     protected void onPause() {
         super.onPause();
         isLogginOut = true;
+        IsBackground = true;
     }
 
     private void disconnectDriver(){
-        btnPanico.setVisibility(View.INVISIBLE);
+        //btnPanico.setVisibility(View.INVISIBLE);
+        btnPanico.hide();
         LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient,this);
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         DatabaseReference ref = FirebaseDatabase.getInstance().getReference("DriversAvailable");
@@ -589,7 +609,30 @@ public class DriverMapActivity extends AppCompatActivity
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
-            super.onBackPressed();
+            AlertDialog alertDialog = new AlertDialog.Builder(DriverMapActivity.this).create();
+            alertDialog.setTitle("Alerta");
+            alertDialog.setMessage("¿Esta seguro de salir? \n Dejará de ser visible para los pasajeros");
+            alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "Si",
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                            //super.onBackPressed();
+                            //this.finish();
+                            finish();
+                            onBackPressed();
+                            LogOut();
+                        }
+                    });
+            alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "No", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+
+                }
+            });
+            alertDialog.show();
+
+
+
         }
     }
 
@@ -637,8 +680,7 @@ public class DriverMapActivity extends AppCompatActivity
     }
 
     private void goHistory() {
-        Intent intent = new Intent(DriverMapActivity.this, HistoryActiviy.class);
-        intent.putExtra("customerOrDriver","Drivers");
+        Intent intent = new Intent(DriverMapActivity.this,ResumeDayActivity.class);
         startActivity(intent);
         return;
     }
@@ -656,7 +698,8 @@ public class DriverMapActivity extends AppCompatActivity
     //<editor-fold desc="Status of map">
     @Override
     public void onLocationChanged(Location location) {
-
+        double myspeed = location.getSpeed();
+        txtSpeed.setText("Velocidad " + myspeed);
         if (mLastLocation == null)
             mLastLocation = location;
 
@@ -693,6 +736,8 @@ public class DriverMapActivity extends AppCompatActivity
                 }else if (customerId != ""){
                     geoFireAvailable.removeLocation(userId);
                     geoFireWorking.setLocation(userId, new GeoLocation(location.getLatitude(), location.getLongitude()));
+                    double speed = location.getSpeed();
+
                     //Para inicializar el listener de si el usuario cancelo.
                     if (!banUserCancelled){
                         banUserCancelled = true;
@@ -729,7 +774,9 @@ public class DriverMapActivity extends AppCompatActivity
     }
 
     private void connectDriver() {
-        btnPanico.setVisibility(View.VISIBLE);
+        //btnPanico.setVisibility(View.VISIBLE);
+        btnPanico.show();
+
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             //return;
         }
@@ -855,6 +902,9 @@ public class DriverMapActivity extends AppCompatActivity
     private ValueEventListener mValueCustomerRequetsDestination;
     DatabaseReference assignedCustomerDestination;
 
+    DatabaseReference assignedTravelType;
+    private ValueEventListener mValueassignedTravelType;
+
     private String customerId = "";
     private String isAssigned = "";
     private Boolean isStarted;
@@ -867,7 +917,40 @@ public class DriverMapActivity extends AppCompatActivity
             public void onDataChange(DataSnapshot dataSnapshot) {
                 if (dataSnapshot.exists()) {
                     customerId = dataSnapshot.getValue().toString();
-                    showAlertNewAssignedCustomer();
+                    assignedTravelType = FirebaseDatabase.getInstance().getReference().child("customerRequest").child(customerId).child("travelType");
+                    mValueassignedTravelType = assignedTravelType.addValueEventListener(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+
+                            int typeTravel = Integer.parseInt(dataSnapshot.getValue().toString());
+
+                            if (typeTravel == 1 && IsPrivate){
+                                showAlertNewAssignedCustomer();
+                            }
+                            else if(typeTravel == 2 && !IsPrivate){
+                                showAlertNewAssignedCustomer();
+                            }
+                            else {
+                                assignedCustomerRef.removeEventListener(mValueEventListener);
+                                assignedTravelType.removeEventListener(mValueassignedTravelType);
+
+                                isAssigned = "";
+                                String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+                                DatabaseReference assignedCustomerRefvr = FirebaseDatabase.getInstance().getReference();
+                                assignedCustomerRefvr.child("Users").child("Drivers").child(driverId).child("customerRideId").child("accepted").setValue(false);
+                                assignedCustomerRefvr.child("Users").child("Drivers").child(driverId).child("customerRideId").removeValue();
+                                customerId = "";
+                                isStarted = null;
+
+                                getAssignedCustomer();
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
+
+                        }
+                    });
                 }
             }
             @Override
@@ -878,66 +961,53 @@ public class DriverMapActivity extends AppCompatActivity
     }
 
     private void showAlertNewAssignedCustomer(){
-        assignedCustomerRef.removeEventListener( mValueEventListener );
-        isAssigned = "Yes";
 
-        notificationService = MediaPlayer.create(this,R.raw.notifir);
-        notificationService.start();
+        try{
+            assignedCustomerRef.removeEventListener( mValueEventListener );
+            assignedTravelType.removeEventListener(mValueassignedTravelType);
 
-        final Vibrator vibrator;
-        vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-        vibrator.vibrate(2000);
+            isAssigned = "Yes";
 
-        final AlertDialog.Builder dialog = new AlertDialog.Builder(DriverMapActivity.this);
+            notificationService = MediaPlayer.create(this,R.raw.notifir);
+            notificationService.start();
 
-        dialog.setTitle("Tienes un nuevo servicio")
-                .setCancelable(false)
-                .setMessage("Un pasaje espera taxi cercas de ti")
-                .setPositiveButton("Aceptar pasaje", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        notificationService.stop();
-                        vibrator.cancel();
-                        erasePolyLines();
-                        isAssigned = "";
+            final Vibrator vibrator;
+            vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+            vibrator.vibrate(2000);
 
-                        String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-                        DatabaseReference assignedCustomerRefa = FirebaseDatabase.getInstance().getReference();
-                        assignedCustomerRefa.child("Users").child("Drivers").child(driverId).child("customerRideId").child("accepted").setValue(true);
-                        assignedCustomerRefa.child("customerRequest").child(customerId).child("driverId").setValue(driverId);
+            final AlertDialog.Builder dialog = new AlertDialog.Builder(DriverMapActivity.this);
 
-                        mActiveSwitch.setVisibility(View.INVISIBLE);
-
-                        getAssignedCustomerPickupLocation();
-
-                    }
-                }).setNegativeButton("Ignorar", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                notificationService.stop();
-                isAssigned = "";
-                String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-                DatabaseReference assignedCustomerRefv = FirebaseDatabase.getInstance().getReference();
-                assignedCustomerRefv.child("Users").child("Drivers").child(driverId).child("customerRideId").child("accepted").setValue(false);
-                assignedCustomerRefv.child("Users").child("Drivers").child(driverId).child("customerRideId").removeValue();
-                customerId = "";
-                isStarted = null;
-
-                getAssignedCustomer();
+            if (IsBackground){
+                IsBackground = false;
             }
-        });
-        //dialog.show();
 
-        final AlertDialog alertDialog = dialog.create();
-        alertDialog.show();
 
-        //Begin
-        final Handler handler = new Handler();
-        final Runnable runnable = new Runnable() {
-            @Override
-            public void run() {
-                if (alertDialog.isShowing()){
-                    alertDialog.dismiss();
+            dialog.setTitle("Tienes un nuevo servicio")
+                    .setCancelable(false)
+                    .setMessage("Un pasaje espera taxi cercas de ti")
+                    .setPositiveButton("Aceptar pasaje", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            notificationService.stop();
+                            vibrator.cancel();
+                            erasePolyLines();
+                            isAssigned = "";
+
+                            String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+                            DatabaseReference assignedCustomerRefa = FirebaseDatabase.getInstance().getReference();
+                            assignedCustomerRefa.child("Users").child("Drivers").child(driverId).child("customerRideId").child("accepted").setValue(true);
+                            assignedCustomerRefa.child("customerRequest").child(customerId).child("driverId").setValue(driverId);
+
+                            mActiveSwitch.setVisibility(View.INVISIBLE);
+                            btnCancelarViaje.setVisibility(View.VISIBLE);
+
+                            getAssignedCustomerPickupLocation();
+
+                        }
+                    }).setNegativeButton("Ignorar", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    notificationService.stop();
                     isAssigned = "";
                     String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
                     DatabaseReference assignedCustomerRefv = FirebaseDatabase.getInstance().getReference();
@@ -945,21 +1015,68 @@ public class DriverMapActivity extends AppCompatActivity
                     assignedCustomerRefv.child("Users").child("Drivers").child(driverId).child("customerRideId").removeValue();
                     customerId = "";
                     isStarted = null;
-
                     getAssignedCustomer();
-                }
-            }
-        };
 
-        alertDialog.setOnDismissListener(new DialogInterface.OnDismissListener(){
-            @Override
-            public void onDismiss(DialogInterface dialog) {
-                handler.removeCallbacks(runnable);
+                }
+            });
+            //dialog.show();
+
+            final AlertDialog alertDialog = dialog.create();
+
+            //Para que pueda aparecer el dialog verificamos que este finalizado el proceso.
+            if(!DriverMapActivity.this.isFinishing())
+            {
+                alertDialog.show();
             }
-        });
-        handler.postDelayed(runnable,12000);
-        //End
+
+            //Begin
+            final Handler handler = new Handler();
+            final Runnable runnable = new Runnable() {
+                @Override
+                public void run() {
+                    if (alertDialog.isShowing()){
+                        alertDialog.dismiss();
+                        isAssigned = "";
+                        String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+                        DatabaseReference assignedCustomerRefv = FirebaseDatabase.getInstance().getReference();
+                        assignedCustomerRefv.child("Users").child("Drivers").child(driverId).child("customerRideId").child("accepted").setValue(false);
+                        assignedCustomerRefv.child("Users").child("Drivers").child(driverId).child("customerRideId").removeValue();
+                        customerId = "";
+                        isStarted = null;
+
+                        getAssignedCustomer();
+                    }
+                }
+            };
+
+            alertDialog.setOnDismissListener(new DialogInterface.OnDismissListener(){
+                @Override
+                public void onDismiss(DialogInterface dialog) {
+                    handler.removeCallbacks(runnable);
+                }
+            });
+            handler.postDelayed(runnable,12000);
+            //End
+
+        }catch(Exception er){
+            //Cancelar como si ignorara el servicio.
+            notificationService.stop();
+            isAssigned = "";
+            String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+            DatabaseReference assignedCustomerRefv = FirebaseDatabase.getInstance().getReference();
+            assignedCustomerRefv.child("Users").child("Drivers").child(driverId).child("customerRideId").child("accepted").setValue(false);
+            assignedCustomerRefv.child("Users").child("Drivers").child(driverId).child("customerRideId").removeValue();
+            customerId = "";
+            isStarted = null;
+            Toast.makeText(getApplicationContext(), "Favor e volver a iniciar sesión para calibrar bien tu GPS", Toast.LENGTH_LONG).show();
+
+            getAssignedCustomer();
+
+        }
+
     }
+
+    //Termina mensaje de nuevo
 
     private void getDestinationCustomer(){
         assignedCustomerDestination = FirebaseDatabase.getInstance().getReference().child("customerRequest").child(customerId).child("h").child("l");
@@ -987,7 +1104,8 @@ public class DriverMapActivity extends AppCompatActivity
                     getRouteToMarker(driverLatLng);
 
                     if (latitudDestination != 0  && longuitudDestination != 0){
-                        btnNavegarDestino.setVisibility(View.VISIBLE);
+                        //btnNavegarDestino.setVisibility(View.VISIBLE);
+                        btnNavegarDestino.show();
                     }
 
                     //Comenzamos a pintar la ruta
@@ -1163,7 +1281,6 @@ public class DriverMapActivity extends AppCompatActivity
         //customerId
         DatabaseReference customerRequestRef = FirebaseDatabase.getInstance().getReference().child("customerRequest").child(customerId).child("rate");
         customerRequestRef.setValue(tarifa);
-
     }
 
     private void recordRide(double travelDistance, double travelTime){
@@ -1173,27 +1290,30 @@ public class DriverMapActivity extends AppCompatActivity
         DatabaseReference historyRef = FirebaseDatabase.getInstance().getReference().child("history");
         String requestId = historyRef.push().getKey();
 
+        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        String fInicial = dateFormat.format(dateBeginRide).toString();
+
         driverRef.child(requestId).setValue(true);
         customerRef.child(requestId).setValue(true);
 
-        DateTime dateEndRide = DateTime.now();
+        Date dateEndRide = new Date();
+        String fFinal = dateFormat.format(dateEndRide).toString();
 
         HashMap map = new HashMap();
         map.put("driver", driverId);
         map.put("customer",customerId);
-        map.put("DateBeginRide",dateBeginRide);
+        map.put("DateBeginRide",fInicial);
         map.put("LocationBeginLatitude",LocationBeginRide.getLatitude());
         map.put("LocationBeginLongitude",LocationBeginRide.getLongitude());
         map.put("LocationEndLatitud",mCurrentLocation.getLatitude());
         map.put("LocationEndLongitude",mCurrentLocation.getLongitude());
-        map.put("DateEndRide",dateEndRide);
+        map.put("DateEndRide",fFinal);
         map.put("ratingCustomer",0);
         map.put("travelTime", travelTime);
         map.put("travelDistance", travelDistance);
         map.put("rate",tarifa);
 
         historyRef.child(requestId).updateChildren(map);
-
     }
 
     //Se utilizan solo para ser referencia de los puntos que se van a pintar.
@@ -1204,9 +1324,12 @@ public class DriverMapActivity extends AppCompatActivity
         mLatLngCurretn = new LatLng(mCurrentLocation.getLatitude(),mCurrentLocation.getLongitude());
 
         progressDialog = ProgressDialog.show(this, "Por favor espere", "Buscando la ruta...", true);
+
+        //Pintar Ruta.
         Routing routing = new Routing.Builder()
                 .travelMode(AbstractRouting.TravelMode.DRIVING)
                 .withListener(this)
+                .key("AIzaSyD7R5F15phKYil9g-6PKb3RuKsm87YU7KM")
                 .alternativeRoutes(false)
                 .waypoints(new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude()), pickupLatLng)
                 .build();
@@ -1281,5 +1404,25 @@ public class DriverMapActivity extends AppCompatActivity
             line.remove();
         }
         polylines.clear();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
     }
 }

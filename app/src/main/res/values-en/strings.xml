@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Pixie Go Driver</string>
+    <string name="app_name">TAGSI</string>
     <string name="title_activity_referencia">ReferenciaActivity</string>
     <string name="hint_username">Username</string>
     <string name="hint_password">Password</string>

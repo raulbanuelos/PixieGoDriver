@@ -33,6 +33,12 @@ tools:showIn="@layout/app_bar_driver_map"
             android:id="@+id/activeSwitch"
             />
 
+        <TextView
+            android:id="@+id/txtVelocimetro"
+            android:layout_width="wrap_content"
+            android:layout_height="16dp"
+            android:text="Este sera el Velocimetro"
+            />
         <android.support.design.widget.FloatingActionButton
             android:id="@+id/btnNavegarDestino"
             android:layout_width="wrap_content"
@@ -50,7 +56,7 @@ tools:showIn="@layout/app_bar_driver_map"
             android:layout_height="wrap_content"
             android:layout_gravity="center|left"
             android:layout_alignParentEnd="true"
-            android:src="@mipmap/sirenamorada"
+            android:src="@drawable/emeregencia"
             android:visibility="invisible"
             android:padding="2dp"
             >

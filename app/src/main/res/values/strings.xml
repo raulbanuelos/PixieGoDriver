@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Pixie Go Driver</string>
+    <string name="app_name">TAGSI</string>
     <string name="title_activity_referencia">ReferenciaActivity</string>
     <string name="hint_username">Nombre de usuario</string>
     <string name="hint_password">Contraseña</string>

@@ -69,6 +69,7 @@ public class HistoryActiviy extends AppCompatActivity {
             public void onDataChange(DataSnapshot dataSnapshot) {
                 if (dataSnapshot.exists()){
                     String rideId = dataSnapshot.getKey();
+
                     HistoryObject obj = new HistoryObject(rideId);
                     resultsHistory.add(obj);
                     mHistoryAdapter.notifyDataSetChanged();

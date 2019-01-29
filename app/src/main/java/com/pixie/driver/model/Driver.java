@@ -14,9 +14,15 @@ public class Driver {
     private String placasTaxi;
     private Boolean isActive;
     private String profileImageUrl;
+    private Boolean IsPrivate;
+
 
     public Driver() {
     }
+
+    public Boolean getIsPrivate(){return  IsPrivate;}
+
+    public void setIsPrivate(Boolean isPrivate){ this.IsPrivate = isPrivate;}
 
     public String getId() {
         return id;
@@ -82,7 +88,7 @@ public class Driver {
         isActive = active;
     }
 
-    public Driver(String id, String name, String lastName, String address, String rfc, String curp, String placasTaxi, Boolean isActive,String profileImageUrl) {
+    public Driver(String id, String name, String lastName, String address, String rfc, String curp, String placasTaxi, Boolean isActive,String profileImageUrl,Boolean isPrivate) {
 
         this.id = id;
         this.name = name;
@@ -93,6 +99,7 @@ public class Driver {
         this.placasTaxi = placasTaxi;
         this.isActive = isActive;
         this.profileImageUrl = profileImageUrl;
+        this.IsPrivate = isPrivate;
     }
 
     public String getProfileImageUrl() {

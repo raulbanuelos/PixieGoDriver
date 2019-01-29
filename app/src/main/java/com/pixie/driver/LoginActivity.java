@@ -19,13 +19,13 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.pixie.driver.model.Driver;
-import com.pixie.driver.view.CreateAccountActivity;
 import com.pixie.driver.view.DriverMapActivity;
 
 public class LoginActivity extends AppCompatActivity   {
@@ -49,11 +49,70 @@ public class LoginActivity extends AppCompatActivity   {
     private FirebaseAuth firebaseAuth;
     private ValueEventListener mValueEventListener;
     DatabaseReference databaseReference;
+    FirebaseAuth.AuthStateListener authStateListener;
     //</editor-fold>
 
     //<editor-fold desc="Status de activity">
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        FirebaseAuth auth = FirebaseAuth.getInstance();
+        authStateListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                FirebaseUser firebaseUser = firebaseAuth.getCurrentUser();
+                if (firebaseUser != null){
+                    //Toast.makeText(LoginActivity.this, "You are signed in Firebase!", Toast.LENGTH_SHORT).show();
+
+                    String IdDriver = FirebaseAuth.getInstance().getCurrentUser().getUid();
+                    databaseReference = FirebaseDatabase.getInstance().getReference().child(TAG_USERS).child(TAG_DRIVERS).child(IdDriver);
+                    mValueEventListener = databaseReference.addValueEventListener(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+                            try{
+                                Driver driver = dataSnapshot.getValue(Driver.class);
+
+                                if (driver != null){
+                                    databaseReference.removeEventListener(mValueEventListener);
+                                    if (driver.getActive()){
+                                        Toast.makeText(LoginActivity.this,R.string.msg_bienvenido + driver.getName(),Toast.LENGTH_SHORT).show();
+                                        Intent intent = new Intent(LoginActivity.this,DriverMapActivity.class);
+
+                                        intent.putExtra("IsPrivate",driver.getIsPrivate());
+
+                                        startActivity(intent);
+                                        finish();
+                                        return;
+                                    }else
+                                    {
+                                        Toast.makeText(LoginActivity.this,R.string.msg_account_no_active,Toast.LENGTH_SHORT).show();
+                                    }
+                                }else{
+                                    databaseReference.removeEventListener(mValueEventListener);
+                                    Toast.makeText(LoginActivity.this,R.string.error_inicio_session,Toast.LENGTH_SHORT).show();
+                                }
+                                getProgressDialog().hide();
+
+                            }catch (Exception er){
+                                getProgressDialog().hide();
+                                String a = er.getMessage();
+                                Toast.makeText(LoginActivity.this,er.getMessage(),Toast.LENGTH_SHORT).show();
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
+                            getProgressDialog().hide();
+                        }
+                    });
+
+                }else{
+                    Toast.makeText(LoginActivity.this, "Por favor inicia sesión!", Toast.LENGTH_SHORT).show();
+                }
+            }
+        };
+
+
         setContentView(R.layout.activity_login);
         context = getApplicationContext();
         inicializarProgres();
@@ -110,11 +169,13 @@ public class LoginActivity extends AppCompatActivity   {
     @Override
     protected void onStop() {
         super.onStop();
+        firebaseAuth.removeAuthStateListener(authStateListener);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
+        firebaseAuth.addAuthStateListener(authStateListener);
     }
 
     @Override
@@ -141,18 +202,22 @@ public class LoginActivity extends AppCompatActivity   {
                         Toast.makeText(LoginActivity.this,R.string.error_inicio_session,Toast.LENGTH_SHORT).show();
                     }
                     else{
-                        String IdDriver = FirebaseAuth.getInstance().getCurrentUser().getUid();
+                        /*String IdDriver = FirebaseAuth.getInstance().getCurrentUser().getUid();
                         databaseReference = FirebaseDatabase.getInstance().getReference().child(TAG_USERS).child(TAG_DRIVERS).child(IdDriver);
                         mValueEventListener = databaseReference.addValueEventListener(new ValueEventListener() {
                             @Override
                             public void onDataChange(DataSnapshot dataSnapshot) {
                                 try{
                                     Driver driver = dataSnapshot.getValue(Driver.class);
+
                                     if (driver != null){
                                         databaseReference.removeEventListener(mValueEventListener);
                                         if (driver.getActive()){
                                             Toast.makeText(LoginActivity.this,R.string.msg_bienvenido + driver.getName(),Toast.LENGTH_SHORT).show();
                                             Intent intent = new Intent(LoginActivity.this,DriverMapActivity.class);
+
+                                            intent.putExtra("IsPrivate",driver.getIsPrivate());
+
                                             startActivity(intent);
                                             finish();
                                             return;
@@ -177,7 +242,7 @@ public class LoginActivity extends AppCompatActivity   {
                             public void onCancelled(DatabaseError databaseError) {
                                 getProgressDialog().hide();
                             }
-                        });
+                        });*/
                     }
                 }
             });
@@ -215,9 +280,4 @@ public class LoginActivity extends AppCompatActivity   {
     }
     //</editor-fold>
 
-    public void goCreateAccount(View view)
-    {
-        Intent intent = new Intent(this, CreateAccountActivity.class);
-        startActivity(intent);
-    }
 }

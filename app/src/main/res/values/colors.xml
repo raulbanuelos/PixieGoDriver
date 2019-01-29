@@ -3,7 +3,7 @@
     <color name="colorPrimary">#10233F</color>
     <color name="colorPrimaryDark">#1D2740</color>
     <color name="colorPrimaryLight">#E1BEE7</color>
-    <color name="colorAccent">#00BCD4</color>
+    <color name="colorAccent">#eb7f00</color>
     <color name="colorPrimaryText">#212121</color>
     <color name="colorSecondaryText">#757575</color>
     <color name="icons">#FFFFFF</color>
@@ -11,5 +11,6 @@
     <color name="editTextColorWhite">#FFFFFF</color>
     <color name="editTextColorBlack">#000000</color>
     <color name="colorLightRaisedButton">#FFEBEE</color>
+    <color name="colorBackgroundInicio">#225378</color>
 
 </resources>

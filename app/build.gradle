@@ -1,14 +1,14 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 26
-    buildToolsVersion "26.0.0"
+    compileSdkVersion 28
+    buildToolsVersion "28.0.0"
     defaultConfig {
         applicationId 'com.pixie.driver'
         minSdkVersion 17
-        targetSdkVersion 26
-        versionCode 19
-        versionName "1.25"
+        targetSdkVersion 28
+        versionCode 25
+        versionName "1.31"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -27,23 +27,24 @@ dependencies {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
     compile 'com.firebase:geofire-android:2.1.1'
-    compile 'com.android.support:appcompat-v7:26.+'
+    compile 'com.android.support:appcompat-v7:28.0.0'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
-    compile 'com.android.support:design:26.+'
-    compile 'com.google.firebase:firebase-core:10.2.1'
-    compile 'com.google.firebase:firebase-database:10.2.1'
-    compile 'com.google.firebase:firebase-auth:10.2.1'
-    compile 'com.google.firebase:firebase-storage:10.2.1'
-    compile 'com.google.android.gms:play-services-maps:10.2.1'
-    compile 'com.google.android.gms:play-services-location:10.2.1'
+    compile 'com.android.support:design:28.0.0'
+    compile 'com.google.firebase:firebase-core:16.0.0'
+    compile 'com.google.firebase:firebase-database:16.0.5'
+    compile 'com.google.firebase:firebase-auth:16.1.0'
+    compile 'com.google.firebase:firebase-storage:16.0.5'
+    compile 'com.google.android.gms:play-services-maps:16.0.0'
+    compile 'com.google.android.gms:play-services-location:16.0.0'
     compile 'com.google.maps:google-maps-services:0.1.20'
     compile 'com.google.maps.android:android-maps-utils:0.4.+'
     compile 'joda-time:joda-time:2.9.4'
     compile 'com.squareup.picasso:picasso:2.5.2'
     compile 'com.github.jd-alexander:library:1.1.0'
     compile 'com.shitij.goyal:slide-button:1.0.0'
-    compile 'com.google.firebase:firebase-messaging:10.2.1'
-    compile 'com.android.support:recyclerview-v7:26.+'
+    compile 'com.google.firebase:firebase-messaging:17.3.4'
+    compile 'com.android.support:recyclerview-v7:28.0.0'
+    compile 'com.github.PhilJay:MPAndroidChart:v3.0.3'
     testCompile 'junit:junit:4.12'
 }
 apply plugin: 'com.google.gms.google-services'
